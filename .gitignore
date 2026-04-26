@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist-electron/
+release/
+data/*.bak
+data/*.tmp
+*.log
+.DS_Store

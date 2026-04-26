@@ -1,0 +1,555 @@
+:root {
+  color: #172026;
+  background: #f3f5f7;
+  font-family:
+    Inter,
+    "Noto Sans TC",
+    "Microsoft JhengHei",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 1100px;
+  min-height: 100vh;
+  background: #f3f5f7;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.appShell {
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.centerState {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  color: #53616c;
+  font-size: 16px;
+}
+
+.startScreen {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+  background: #eef2f5;
+}
+
+.startPanel {
+  width: min(920px, 100%);
+  padding: 28px;
+  border: 1px solid #d8dee4;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.startPanel h1 {
+  margin: 0 0 8px;
+  color: #101820;
+  font-size: 32px;
+  letter-spacing: 0;
+}
+
+.startPanel p {
+  margin: 0;
+  color: #53616c;
+}
+
+.startActions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.startAction {
+  display: flex;
+  min-height: 156px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid #d8dee4;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #24313a;
+  text-align: left;
+}
+
+.startAction:hover {
+  border-color: #1d6d5f;
+  background: #f3fbf8;
+}
+
+.startAction span {
+  color: #101820;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.startAction small {
+  color: #64727d;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.primaryStart {
+  border-color: #1d6d5f;
+  background: #edf8f5;
+}
+
+.startHint {
+  margin-top: 18px !important;
+  font-size: 14px;
+}
+
+.appHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 18px;
+}
+
+.appHeader h1 {
+  margin: 0 0 6px;
+  color: #101820;
+  font-size: 30px;
+  font-weight: 760;
+  letter-spacing: 0;
+}
+
+.appHeader p {
+  margin: 0;
+  color: #53616c;
+}
+
+.summaryStrip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid #d8dee4;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.summaryStrip span {
+  min-width: 72px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #eef2f5;
+  color: #24313a;
+  font-size: 14px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.dangerText {
+  color: #9f1d20 !important;
+}
+
+.warningText {
+  color: #8a5a00 !important;
+}
+
+.systemBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid #d8dee4;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.systemBar div:first-child {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.systemBar strong {
+  flex: 0 0 auto;
+}
+
+.systemBar span {
+  min-width: 0;
+  overflow: hidden;
+  color: #53616c;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.saveState {
+  flex: 0 0 auto;
+  color: #1d6d5f;
+  font-size: 14px;
+}
+
+.systemActions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.notice {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-weight: 650;
+}
+
+.errorNotice {
+  border: 1px solid #e5a4a4;
+  background: #fff1f1;
+  color: #9f1d20;
+}
+
+.successNotice {
+  border: 1px solid #9fd4ca;
+  background: #eaf8f4;
+  color: #1d6d5f;
+}
+
+.workspaceGrid {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.85fr) minmax(300px, 1fr) minmax(440px, 1.35fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.panel {
+  display: flex;
+  min-height: calc(100vh - 172px);
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #d8dee4;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid #e8ecef;
+}
+
+.panelHeader h2 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.panelHeader span {
+  color: #53616c;
+  font-size: 14px;
+}
+
+.itemList {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  overflow: auto;
+  padding: 14px;
+}
+
+.listItem,
+.consumableItem {
+  border: 1px solid #dfe5ea;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.listItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 8px;
+}
+
+.listItem.selected {
+  border-color: #1d6d5f;
+  background: #f0faf7;
+}
+
+.itemMain {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.itemMain strong,
+.consumableTitle strong {
+  color: #101820;
+  font-size: 15px;
+}
+
+.itemMain span,
+.consumableTitle span,
+.notes {
+  color: #64727d;
+  font-size: 13px;
+}
+
+.itemActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.alignLeft {
+  justify-content: flex-start;
+}
+
+.iconButton,
+.primaryButton,
+.secondaryButton,
+.successButton,
+.dangerButton {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.iconButton {
+  width: 34px;
+  border: 1px solid #d8dee4;
+  background: #ffffff;
+  color: #3d4b55;
+}
+
+.iconButton:hover,
+.secondaryButton:hover {
+  background: #eef2f5;
+}
+
+.iconButton.danger,
+.dangerButton {
+  border-color: #e5a4a4;
+  color: #9f1d20;
+}
+
+.primaryButton {
+  border: 1px solid #1d6d5f;
+  background: #1d6d5f;
+  color: #ffffff;
+}
+
+.successButton {
+  border: 1px solid #277348;
+  background: #277348;
+  color: #ffffff;
+}
+
+.secondaryButton,
+.dangerButton {
+  border: 1px solid #d8dee4;
+  background: #ffffff;
+  color: #24313a;
+}
+
+.compact {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.primaryButton,
+.successButton,
+.secondaryButton {
+  padding: 0 12px;
+}
+
+.entityForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-top: 1px solid #e8ecef;
+  background: #f9fafb;
+}
+
+.entityForm h3 {
+  margin: 0;
+  color: #24313a;
+  font-size: 15px;
+  letter-spacing: 0;
+}
+
+.entityForm label {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  color: #34424c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.entityForm input,
+.entityForm textarea {
+  width: 100%;
+  border: 1px solid #cfd6dd;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #101820;
+  outline: none;
+}
+
+.entityForm input {
+  height: 36px;
+  padding: 0 10px;
+}
+
+.entityForm textarea {
+  min-height: 70px;
+  resize: vertical;
+  padding: 9px 10px;
+}
+
+.entityForm input:focus,
+.entityForm textarea:focus {
+  border-color: #1d6d5f;
+  box-shadow: 0 0 0 3px rgba(29, 109, 95, 0.14);
+}
+
+.formRow,
+.formActions {
+  display: flex;
+  gap: 10px;
+}
+
+.formActions {
+  align-items: center;
+}
+
+.emptyState {
+  margin: 0;
+  padding: 18px;
+  border: 1px dashed #cfd6dd;
+  border-radius: 8px;
+  color: #64727d;
+  text-align: center;
+}
+
+.consumableList {
+  gap: 12px;
+}
+
+.consumableItem {
+  padding: 12px;
+}
+
+.consumableTitle {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.consumableTitle div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statusPill {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.statusOk {
+  background: #e8f4f0;
+  color: #1d6d5f;
+}
+
+.statusSoon {
+  background: #fff4da;
+  color: #8a5a00;
+}
+
+.statusDue {
+  background: #ffe9e9;
+  color: #9f1d20;
+}
+
+.maintenanceMeta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.maintenanceMeta div {
+  padding: 8px;
+  border-radius: 6px;
+  background: #f3f5f7;
+}
+
+.maintenanceMeta dt {
+  color: #64727d;
+  font-size: 12px;
+}
+
+.maintenanceMeta dd {
+  margin: 3px 0 0;
+  color: #24313a;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.notes {
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
