@@ -71,7 +71,7 @@ The default runtime data path is data/factory-data.json. In development it is re
 
 The current public release is `v1.0.0` on GitHub Releases: https://github.com/Ansenchen123/factory-manager-portable/releases
 
-## 繁體中文摘要
+## 摘要
 
 - Factory Manager Portable 是 Electron 桌面工具，用於管理產線、機台、耗材與維護提醒。
 - 資料以可攜 JSON 檔保存，可建立新存檔、開啟既有存檔，或使用預設執行期路徑。
