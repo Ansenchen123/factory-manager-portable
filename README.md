@@ -1,111 +1,80 @@
-# 工廠管理軟體
+# Factory Manager Portable
 
-一個可攜式桌面 App，用於管理工廠內的「產線 -> 機台 -> 耗材」資料，並依耗材維護週期提供提醒。資料以 JSON 檔保存，不需要資料庫。
+Factory Manager Portable is an Electron desktop app for managing factory production lines, machines, consumables, and recurring maintenance reminders in a portable JSON file.
 
-## 主要功能
+## Features
 
-- 建立、編輯、刪除產線。
-- 在產線下建立、編輯、刪除機台。
-- 在機台下建立、編輯、刪除耗材。
-- 為耗材設定「每 N 日維護一次」。
-- 顯示耗材維護狀態：正常、7 日內到期、今日到期、逾期。
-- 按下「標記已維護」後，下一次提醒會從該次完成時間重新計算。
-- 啟動時可選擇「開新存檔」、「開啟存檔」或「讀取預設存檔」。
-- 資料使用 JSON，可複製到其他電腦或其他平台版本繼續使用。
+- Create, edit, and delete production lines, machines, and consumables.
+- Store factory data in a portable JSON file that can be opened on another packaged build.
+- Create a new data file, open an existing file, or load the default runtime data file.
+- Validate the saved JSON shape with Zod before writes complete.
+- Keep a backup copy before replacing the current data file.
+- Show maintenance status as normal, due soon within seven days, or due now.
+- Mark a consumable as maintained so the next reminder is recalculated from that completion time.
 
-## 下載與執行
+## Build and Run
 
-Windows 使用者可到 GitHub Releases 下載：
+Requirements:
 
-- `Factory Manager Portable 1.0.0.exe`：單檔可攜版。
-- `Factory Manager Portable-1.0.0-win.zip`：資料夾版，解壓後執行 `Factory Manager Portable.exe`。
+- Node.js and npm.
+- The dependencies declared in `package.json`.
 
-建議優先使用 zip 資料夾版，因為資料檔位置比較直觀，也比較適合整個資料夾搬移。
-
-## 存檔流程
-
-啟動後會先看到存檔入口畫面：
-
-- `開新存檔`：選擇位置並建立新的空白 JSON 存檔。
-- `開啟存檔`：讀取既有 JSON 存檔。
-- `讀取預設存檔`：使用 App 資料夾內的 `data/factory-data.json`。
-
-進入管理畫面後，上方會顯示目前存檔路徑，也可以按 `開啟其他存檔` 切換到另一個 JSON 存檔。
-
-## 資料檔位置
-
-如果選擇 `讀取預設存檔`，資料會放在：
-
-- 開發模式：`data/factory-data.json`
-- Windows/Linux 打包版：執行檔同層的 `data/factory-data.json`
-- macOS 打包版：`.app` 同層的 `data/factory-data.json`
-
-每次儲存時，程式會先把上一版存成：
-
-```text
-factory-data.json.bak
-```
-
-## 可攜性說明
-
-不同作業系統需要各自打包版本：
-
-- Windows 使用 Windows 版。
-- macOS 使用 macOS 版。
-- Linux 使用 Linux 版。
-
-但 JSON 存檔格式共用。只要把 JSON 存檔複製到另一個平台版本，或在 App 裡選擇 `開啟存檔`，就可以沿用同一份資料。
-
-## 開發指令
+Install dependencies:
 
 ```powershell
 npm install
+```
+
+Run the development desktop app:
+
+```powershell
 npm run dev
 ```
 
-## 測試與建置
+Run the Vitest suite. The `test` script is `vitest run`, so this command executes the non-watch test run:
 
 ```powershell
 npm test
-npm run build
-npm run package:win
 ```
 
-其他平台打包：
+Build the renderer and Electron main process:
 
 ```powershell
+npm run build
+```
+
+Create packaged builds:
+
+```powershell
+npm run package:win
 npm run package:mac
 npm run package:linux
 ```
 
-## 技術架構
+The default runtime data path is data/factory-data.json. In development it is resolved from the current working directory; in packaged builds it is resolved next to the executable, with a macOS-specific app bundle adjustment in `electron/factoryData.ts`.
 
-- Electron：桌面 App shell、檔案對話框、JSON 檔案讀寫。
-- React：使用者介面。
-- TypeScript：型別安全。
-- Vite：前端建置。
-- Zod：JSON 資料驗證。
-- Vitest：單元與 UI 測試。
-- electron-builder：跨平台打包。
+## Project Structure
 
-## 專案結構
+- `electron/` - Electron main process, preload bridge, file dialogs, and JSON data access.
+- `shared/` - shared Zod schemas, TypeScript data types, and maintenance reminder logic.
+- `src/` - React user interface and styling.
+- `tests/` - Vitest unit and component tests.
+- `index.html` - Vite HTML entry point.
+- `package.json` - npm scripts, dependencies, and electron-builder configuration.
+- `package-lock.json` - locked npm dependency tree.
+- `vite.config.ts` - Vite renderer build configuration.
+- `vitest.config.ts` - Vitest and jsdom test configuration.
+- `tsconfig.json` - renderer TypeScript configuration.
+- `tsconfig.electron.json` - Electron TypeScript configuration.
 
-```text
-electron/          Electron main process、preload、JSON 存取
-src/               React 使用者介面
-shared/            共用資料模型、驗證與維護提醒邏輯
-tests/             單元測試與 UI 測試
-data/              預設 JSON 存檔位置
-release/           打包輸出，不納入 git
-```
+## Download
 
-## 版本
+The current public release is `v1.0.0` on GitHub Releases: https://github.com/Ansenchen123/factory-manager-portable/releases
 
-目前版本：`v1.0.0`
+## 繁體中文摘要
 
-已驗證項目：
-
-- `npm test` 通過。
-- `npm run build` 通過。
-- Windows 可攜版打包成功。
-- packaged GUI smoke test 通過：啟動後會先顯示存檔入口，讀取預設存檔後會進入管理介面。
+- Factory Manager Portable 是 Electron 桌面工具，用於管理產線、機台、耗材與維護提醒。
+- 資料以可攜 JSON 檔保存，可建立新存檔、開啟既有存檔，或使用預設執行期路徑。
+- npm test 會執行 package.json 中的 vitest run 測試指令。
+- 打包指令包含 Windows、macOS 與 Linux，設定由 package.json 的 electron-builder 區塊定義。
+- 目前公開版本為 v1.0.0，可從 GitHub Releases 頁面下載。
