@@ -1,5 +1,7 @@
 # Factory Manager Portable
 
+![CI](https://github.com/Ansenchen123/factory-manager-portable/actions/workflows/ci.yml/badge.svg)
+
 Factory Manager Portable is an Electron desktop app for managing factory production lines, machines, consumables, and recurring maintenance reminders in a portable JSON file.
 
 ![Factory Manager Portable main window](docs/screenshots/main-window.png)
