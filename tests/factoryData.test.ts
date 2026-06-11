@@ -25,25 +25,32 @@ afterEach(async () => {
 
 describe('portable data path', () => {
   it('uses the project data directory during development', () => {
+    const projectDirectory = process.platform === 'win32' ? 'C:\\Project' : '/project';
+    const appDirectory = process.platform === 'win32' ? 'C:\\App' : '/opt/factory-manager-portable';
+
     expect(
       resolvePortableDataPath({
         isPackaged: false,
-        platform: 'win32',
-        execPath: 'C:\\App\\Factory.exe',
-        cwd: 'C:\\Project',
+        platform: process.platform,
+        execPath: path.join(appDirectory, process.platform === 'win32' ? 'Factory.exe' : 'factory-manager-portable'),
+        cwd: projectDirectory,
       }),
-    ).toBe(path.join('C:\\Project', 'data', 'factory-data.json'));
+    ).toBe(path.join(projectDirectory, 'data', 'factory-data.json'));
   });
 
   it('uses the executable directory for packaged Windows and Linux builds', () => {
+    const packagedPlatform = process.platform === 'win32' ? 'win32' : 'linux';
+    const executableDirectory = packagedPlatform === 'win32' ? 'C:\\Factory' : '/opt/factory-manager-portable';
+    const executableName = packagedPlatform === 'win32' ? 'Factory.exe' : 'factory-manager-portable';
+
     expect(
       resolvePortableDataPath({
         isPackaged: true,
-        platform: 'win32',
-        execPath: 'C:\\Factory\\Factory.exe',
-        cwd: 'C:\\Project',
+        platform: packagedPlatform,
+        execPath: path.join(executableDirectory, executableName),
+        cwd: packagedPlatform === 'win32' ? 'C:\\Project' : '/project',
       }),
-    ).toBe(path.join('C:\\Factory', 'data', 'factory-data.json'));
+    ).toBe(path.join(executableDirectory, 'data', 'factory-data.json'));
   });
 
   it('uses a folder next to the app bundle for packaged macOS builds', () => {
