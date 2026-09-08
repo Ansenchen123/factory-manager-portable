@@ -14,7 +14,14 @@ Factory Manager Portable is an Electron desktop app for managing factory product
 - Validate the saved JSON shape with Zod before writes complete.
 - Keep a backup copy before replacing the current data file.
 - Show maintenance status as normal, due soon within seven days, or due now.
-- Mark a consumable as maintained so the next reminder is recalculated from that completion time.
+- Enter past service dates and planned maintenance dates in Gregorian `YYYY-MM-DD` format.
+- Complete today's maintenance and recalculate the next reminder using local calendar days.
+- Copy and paste production lines, machines, and consumables; copies have independent IDs and no service dates.
+- Move items up and down while retaining the current selection.
+- Keep input focus and unsaved drafts during saves, with native desktop copy/paste and Chinese edit menus.
+- Adapt the workspace to narrow windows and display sizes without horizontal scrolling.
+
+See [the usability review](docs/usability-review-2026-09-08.md) for changes, verification, and remaining manual checks.
 
 ## Build and Run
 
@@ -55,7 +62,7 @@ npm run package:mac
 npm run package:linux
 ```
 
-The default runtime data path is data/factory-data.json. In development it is resolved from the current working directory; in packaged builds it is resolved next to the executable, with a macOS-specific app bundle adjustment in `electron/factoryData.ts`.
+The default runtime data path is `data/factory-data.json`. In development it is resolved from the current working directory. Windows single-file portable builds use the original launcher directory (`PORTABLE_EXECUTABLE_DIR`), not the temporary extraction directory. Other builds resolve it next to the executable, with a macOS app bundle adjustment in `electron/factoryData.ts`.
 
 ## Project Structure
 
@@ -73,7 +80,7 @@ The default runtime data path is data/factory-data.json. In development it is re
 
 ## Download
 
-The current public release is `v1.0.0` on GitHub Releases: https://github.com/Ansenchen123/factory-manager-portable/releases
+Published builds are available on [GitHub Releases](https://github.com/Ansenchen123/factory-manager-portable/releases). Local builds are written to `release/`.
 
 ## 摘要
 
@@ -81,4 +88,14 @@ The current public release is `v1.0.0` on GitHub Releases: https://github.com/An
 - 資料以可攜 JSON 檔保存，可建立新存檔、開啟既有存檔，或使用預設執行期路徑。
 - npm test 會執行 package.json 中的 vitest run 測試指令。
 - 打包指令包含 Windows、macOS 與 Linux，設定由 package.json 的 electron-builder 區塊定義。
-- 目前公開版本為 v1.0.0，可從 GitHub Releases 頁面下載。
+- 公開版本請見 GitHub Releases；本機打包結果位於 `release/`。
+
+## Desktop smoke test
+
+With Playwright installed in your development environment (or available through `NODE_PATH`), run `npm run build`, start `npm run dev:renderer` on port 5173, then run:
+
+```powershell
+node scripts/desktop-smoke.cjs
+```
+
+The test creates an isolated temporary data directory and profile, exercises real Electron file persistence and native clipboard shortcuts, and writes screenshots into the temporary directory printed in its output. It does not open existing factory data. Chinese IME mode still needs a manual check with the input method used on the target computer.
