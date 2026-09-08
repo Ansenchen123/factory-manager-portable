@@ -1,5 +1,6 @@
 import { ItemTools } from './ItemTools';
-import { copyItem, moveItem } from '../shared/items';
+import { SelectableCard } from './SelectableCard';
+import { copyItem, moveItem, dropCard, type CardLocation, type DropPosition } from '../shared/items';
 import { CheckCircle2, Edit3, FileJson, FolderOpen, Plus, Save, Trash2, Wrench } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { getMaintenanceInfo, localDateString, parseCalendarDate, markConsumableMaintained, type MaintenanceStatus } from '../shared/maintenance';
@@ -113,6 +114,8 @@ export function App() {
   const [error, setError] = useState('');
   const saving = useRef(false);
   const composing = useRef(false);
+  const [dragging, setDragging] = useState<CardLocation>();
+  const [transferring, setTransferring] = useState(false);
   const [clipboard, setClipboard] = useState<{ kind: 'line' | 'machine' | 'consumable'; item: ProductionLine | Machine | Consumable }>();
   const lineHasDraft = JSON.stringify(lineForm) !== JSON.stringify(lineFields(data.productionLines.find(line => line.id === lineForm.id)));
   const machines = data.productionLines.flatMap(line => line.machines);
@@ -155,6 +158,7 @@ export function App() {
   const soonCount = allConsumables.filter((consumable) => getMaintenanceInfo(consumable, parseCalendarDate(today)!).status === 'soon').length;
 
   function applySession(session: FactoryDataSession, nextMessage: string) {
+    setDragging(undefined);
     setData(session.data);
     setDataPath(session.path);
     setClipboard(undefined);
@@ -227,6 +231,25 @@ export function App() {
     }), '排列順序已儲存。');
   }
 
+  function handleDrop(source: CardLocation, target: CardLocation, position: DropPosition) {
+    if (saving.current || composing.current) return;
+    const next = dropCard(data, source, target, position, nowIso());
+    if (next === data) return;
+    const destinationLineId = target.kind === 'line' ? target.id : target.lineId;
+    const changingLine = source.kind === 'machine' && source.lineId !== destinationLineId;
+    // A cross-line move changes the forms' parent context. Preserve drafts on cancel/failure.
+    if (changingLine && (machineHasDraft || consumableHasDraft) && !window.confirm('移動機台會切換產線並捨棄尚未儲存的機台與耗材內容。繼續移動？')) return;
+    setTransferring(changingLine);
+    void persist(next, source.kind === 'machine' && source.lineId !== destinationLineId ? '機台已移至目的產線。' : '排列順序已儲存。', () => {
+      if (changingLine) {
+        setSelectedLineId(destinationLineId);
+        setSelectedMachineId(source.id);
+        setMachineForm(emptyMachineForm);
+        setConsumableForm(emptyConsumableForm);
+      }
+    }).finally(() => setTransferring(false));
+  }
+
   function paste(kind: 'line' | 'machine' | 'consumable') {
     if (!clipboard || clipboard.kind !== kind || (kind === 'machine' && !selectedLine) || (kind === 'consumable' && !selectedMachine)) return;
     updateData((current, timestamp) => {
@@ -253,19 +276,23 @@ export function App() {
   }
 
   function selectLine(line: ProductionLine) {
-    if (line.id === selectedLine?.id) return;
-    if ((machineHasDraft || consumableHasDraft) && !window.confirm('切換產線會捨棄尚未儲存的機台與耗材內容。繼續切換？')) return;
+    if (saving.current) return false;
+    if (line.id === selectedLine?.id) return true;
+    if ((machineHasDraft || consumableHasDraft) && !window.confirm('切換產線會捨棄尚未儲存的機台與耗材內容。繼續切換？')) return false;
     setSelectedLineId(line.id);
     setSelectedMachineId(line.machines[0]?.id);
     setMachineForm(emptyMachineForm);
     setConsumableForm(emptyConsumableForm);
+    return true;
   }
 
   function selectMachine(machine: Machine) {
-    if (machine.id === selectedMachine?.id) return;
-    if (consumableHasDraft && !window.confirm('切換機台會捨棄尚未儲存的耗材內容。繼續切換？')) return;
+    if (saving.current) return false;
+    if (machine.id === selectedMachine?.id) return true;
+    if (consumableHasDraft && !window.confirm('切換機台會捨棄尚未儲存的耗材內容。繼續切換？')) return false;
     setSelectedMachineId(machine.id);
     setConsumableForm(emptyConsumableForm);
+    return true;
   }
 
   function submitLine(event: FormEvent<HTMLFormElement>) {
@@ -683,7 +710,8 @@ export function App() {
               <p className="emptyState">尚未建立產線。</p>
             ) : (
               data.productionLines.map((line, index) => (
-                <article className={`listItem ${selectedLine?.id === line.id ? 'selected' : ''}`} key={line.id}>
+                <SelectableCard key={line.id} location={{ kind: 'line', id: line.id }} selected={selectedLine?.id === line.id}
+                  busy={isBusy} dragging={dragging} onDrag={setDragging} onDrop={handleDrop} onSelect={() => selectLine(line)}>
                   <button
                     className="itemMain"
                     type="button"
@@ -698,7 +726,7 @@ export function App() {
                       title="編輯產線" aria-label={`編輯 ${line.name}`}
                       className="iconButton"
                       type="button"
-                      onClick={() => { if (lineHasDraft && !window.confirm('捨棄尚未儲存的產線內容並編輯此產線？')) return; setLineForm(lineFields(line)); focusForm('line-form'); }}
+                      onClick={() => { if (lineHasDraft && !window.confirm('捨棄尚未儲存的產線內容並編輯此產線？')) return; if (!selectLine(line)) return; setLineForm(lineFields(line)); focusForm('line-form'); }}
                     >
                       <Edit3 size={16} />
                     </button>
@@ -712,11 +740,12 @@ export function App() {
                     </button>
                   </div>
                   {itemTools('line', line, index, data.productionLines.length)}
-                </article>
+                </SelectableCard>
               ))
             )}
           </div>
 
+          <p className="fieldHint dragHint">拖動卡片可調整產線順序；也可使用上下移按鈕。</p>
           <form noValidate autoComplete="off" className="entityForm" id="line-form" onSubmit={submitLine}>
             <h3>{lineForm.id ? '編輯產線' : '新增產線'}</h3>
             <label>
@@ -759,7 +788,8 @@ export function App() {
               <p className="emptyState">此產線尚未建立機台。</p>
             ) : (
               selectedLine.machines.map((machine, index) => (
-                <article className={`listItem ${selectedMachine?.id === machine.id ? 'selected' : ''}`} key={machine.id}>
+                <SelectableCard key={machine.id} location={{ kind: 'machine', id: machine.id, lineId: selectedLine.id }} selected={selectedMachine?.id === machine.id}
+                  busy={isBusy} dragging={dragging} onDrag={setDragging} onDrop={handleDrop} onSelect={() => selectMachine(machine)}>
                   <button className="itemMain" type="button" aria-pressed={selectedMachine?.id === machine.id} onClick={() => selectMachine(machine)}>
                     <strong>{machine.name}</strong>
                     <span>{[machine.code, machine.model, machine.location].filter(Boolean).join(' / ') || '未填寫機台資料'}</span>
@@ -769,7 +799,7 @@ export function App() {
                       title="編輯機台" aria-label={`編輯 ${machine.name}`}
                       className="iconButton"
                       type="button"
-                      onClick={() => { if (machineHasDraft && !window.confirm('捨棄尚未儲存的機台內容並編輯此機台？')) return; setMachineForm(machineFields(machine)); focusForm('machine-form'); }}
+                      onClick={() => { if (machineHasDraft && !window.confirm('捨棄尚未儲存的機台內容並編輯此機台？')) return; if (!selectMachine(machine)) return; setMachineForm(machineFields(machine)); focusForm('machine-form'); }}
                     >
                       <Edit3 size={16} />
                     </button>
@@ -783,12 +813,13 @@ export function App() {
                     </button>
                   </div>
                   {itemTools('machine', machine, index, selectedLine.machines.length)}
-                </article>
+                </SelectableCard>
               ))
             )}
           </div>
 
-          <form noValidate autoComplete="off" className="entityForm" id="machine-form" onSubmit={submitMachine}>
+          <p className="fieldHint dragHint">拖動卡片可排序，拖到左側產線卡片可移轉機台。</p>
+          <form inert={transferring} noValidate autoComplete="off" className="entityForm" id="machine-form" onSubmit={submitMachine}>
             <h3>{machineForm.id ? '編輯機台' : '新增機台'}</h3>
             <label>
               機台名稱
@@ -905,7 +936,7 @@ export function App() {
             )}
           </div>
 
-          <form noValidate autoComplete="off" className="entityForm" id="consumable-form" onSubmit={submitConsumable}>
+          <form inert={transferring} noValidate autoComplete="off" className="entityForm" id="consumable-form" onSubmit={submitConsumable}>
             <h3>{consumableForm.id ? '編輯耗材' : '新增耗材'}</h3>
             <div className="formRow">
               <label>

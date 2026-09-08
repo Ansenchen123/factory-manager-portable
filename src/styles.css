@@ -309,6 +309,21 @@ textarea:disabled {
   background: #f0faf7;
 }
 
+.listItem[draggable="true"], .listItem[draggable="true"] .itemMain { cursor: grab; }
+.listItem.dragging { opacity: 0.8; cursor: grabbing; }
+.listItem.dragPreview {
+  position: fixed;
+  z-index: 10000;
+  margin: 0;
+  opacity: 0.8;
+  pointer-events: none;
+  box-shadow: 0 8px 24px #10182033;
+}
+.listItem.drop-before { box-shadow: 0 -3px 0 #1d6d5f; }
+.listItem.drop-after { box-shadow: 0 3px 0 #1d6d5f; }
+.listItem.dropInto { outline: 2px dashed #1d6d5f; outline-offset: 2px; }
+.fieldHint.dragHint { margin: 0; padding: 0 14px 10px; }
+
 .itemMain {
   display: flex;
   min-width: 0;

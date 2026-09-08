@@ -28,7 +28,11 @@ const assert = require('node:assert/strict');
     await label('產線名稱').fill('加工一線');
     await button('建立產線').click(); await saved();
     assert(await label('產線名稱').evaluate(el => el === document.activeElement));
-    await label('機台名稱').fill('精密研磨機');
+    // A direct fill would hide hit-testing or focus regressions after creating a line.
+    await label('機台名稱').click();
+    assert(await label('機台名稱').evaluate(el => el === document.activeElement), 'Machine name did not receive mouse focus');
+    await page.keyboard.insertText('精密研磨機');
+    assert.equal(await label('機台名稱').inputValue(), '精密研磨機');
     await label('代碼').fill('GR-01');
     await button('建立機台').click(); await saved();
     await label('耗材名稱').fill('冷卻濾芯');

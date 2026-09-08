@@ -62,6 +62,112 @@ describe('App', () => {
     });
   });
 
+  async function openBoard() {
+    const data = structuredClone(initialData);
+    const first = data.productionLines[0];
+    first.machines.push({ ...structuredClone(first.machines[0]), id: 'machine-2', name: 'CNC-02', consumables: [] });
+    data.productionLines.push({ ...first, id: 'line-2', name: 'B線', machines: [] });
+    vi.mocked(window.factoryData.loadDefault).mockResolvedValue({ data, path: dataPath });
+    const user = userEvent.setup();
+    render(<App />);
+    await openDefaultSave(user);
+    return user;
+  }
+
+  const card = (name: string) => screen.getByText(name, { selector: 'strong' }).closest('article')!;
+  function drag(source: HTMLElement, target: HTMLElement) {
+    const dataTransfer = { setData: vi.fn(), setDragImage: vi.fn(), effectAllowed: '', dropEffect: '' };
+    fireEvent.dragStart(source, { dataTransfer });
+    fireEvent.dragOver(target, { dataTransfer, clientY: 0 });
+    fireEvent.drop(target, { dataTransfer, clientY: 0 });
+    fireEvent.dragEnd(source, { dataTransfer });
+  }
+
+  it('selects action-row whitespace and selects the entity being edited', async () => {
+    const user = await openBoard();
+    await user.click(card('B線').querySelector('.itemActions')!);
+    expect(card('B線')).toHaveClass('selected');
+    expect(screen.queryByText('CNC-01')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '編輯 A線' }));
+    expect(card('A線')).toHaveClass('selected');
+    expect(screen.getByLabelText('產線名稱')).toHaveValue('A線');
+    await user.click(card('CNC-02').querySelector('.itemTools')!);
+    expect(card('CNC-02')).toHaveClass('selected');
+    await user.click(screen.getByRole('button', { name: '編輯 CNC-01' }));
+    expect(card('CNC-01')).toHaveClass('selected');
+    expect(screen.getByLabelText('機台名稱')).toHaveValue('CNC-01');
+  });
+
+  it('keeps copy independent of selection and respects cancelled selection', async () => {
+    const user = await openBoard();
+    await user.click(screen.getByRole('button', { name: '複製 B線' }));
+    expect(card('A線')).toHaveClass('selected');
+    await user.type(screen.getByLabelText('機台名稱'), '草稿');
+    vi.mocked(window.confirm).mockReturnValue(false);
+    await user.click(card('B線').querySelector('.itemActions')!);
+    expect(card('A線')).toHaveClass('selected');
+    expect(screen.getByLabelText('機台名稱')).toHaveValue('草稿');
+  });
+
+  it('persists line and machine drag ordering while retaining selection', async () => {
+    await openBoard();
+    drag(card('A線'), card('B線'));
+    await waitFor(() => expect(saveMock).toHaveBeenCalledTimes(1));
+    expect(saveMock.mock.lastCall![0].productionLines.map(line => line.id)).toEqual(['line-2', 'line-1']);
+    expect(card('A線')).toHaveClass('selected');
+    drag(card('CNC-01'), card('CNC-02'));
+    await waitFor(() => expect(saveMock).toHaveBeenCalledTimes(2));
+    expect(saveMock.mock.lastCall![0].productionLines[1].machines.map(machine => machine.id)).toEqual(['machine-2', 'machine-1']);
+    expect(card('CNC-01')).toHaveClass('selected');
+  });
+
+  it('moves a machine with its consumables to an empty line', async () => {
+    await openBoard();
+    drag(card('CNC-01'), card('B線'));
+    await waitFor(() => expect(card('B線')).toHaveClass('selected'));
+    const lines = saveMock.mock.lastCall![0].productionLines;
+    expect(lines[0].machines.map(machine => machine.id)).toEqual(['machine-2']);
+    expect(lines[1].machines[0].consumables).toEqual(initialData.productionLines[0].machines[0].consumables);
+    expect(card('CNC-01')).toHaveClass('selected');
+    expect(screen.getByText('濾芯')).toBeInTheDocument();
+  });
+
+  it('retains hierarchy and drafts when a cross-line move is cancelled or fails', async () => {
+    const user = await openBoard();
+    await user.type(screen.getByLabelText('機台名稱'), '草稿');
+    vi.mocked(window.confirm).mockReturnValue(false);
+    drag(card('CNC-01'), card('B線'));
+    expect(saveMock).not.toHaveBeenCalled();
+    vi.mocked(window.confirm).mockReturnValue(true);
+    saveMock.mockRejectedValueOnce(new Error('disk unavailable'));
+    drag(card('CNC-01'), card('B線'));
+    await screen.findByRole('alert');
+    expect(card('A線')).toHaveClass('selected');
+    expect(card('CNC-01')).toBeInTheDocument();
+    expect(screen.getByLabelText('機台名稱')).toHaveValue('草稿');
+  });
+
+  it('does not save invalid or self drops', async () => {
+    await openBoard();
+    drag(card('A線'), card('CNC-01'));
+    drag(card('CNC-01'), card('CNC-01'));
+    expect(saveMock).not.toHaveBeenCalled();
+  });
+
+  it('blocks overlapping moves and form edits while a cross-line save is pending', async () => {
+    await openBoard();
+    let finish!: (session: { data: FactoryData; path: string }) => void;
+    saveMock.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    drag(card('CNC-02'), card('B線'));
+    expect(document.getElementById('machine-form')).toHaveAttribute('inert');
+    drag(card('CNC-01'), card('B線'));
+    expect(saveMock).toHaveBeenCalledTimes(1);
+    await act(async () => finish({ data: saveMock.mock.lastCall![0], path: dataPath }));
+    expect(card('B線')).toHaveClass('selected');
+    expect(card('CNC-02')).toHaveClass('selected');
+    expect(document.getElementById('machine-form')).not.toHaveAttribute('inert');
+  });
+
   it('starts on the save selection screen', () => {
     render(<App />);
 
