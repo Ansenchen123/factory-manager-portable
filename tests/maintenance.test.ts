@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Consumable } from '../shared/schema';
-import { getMaintenanceInfo, markConsumableMaintained } from '../shared/maintenance';
+import { getMaintenanceInfo, markConsumableMaintained, parseCalendarDate } from '../shared/maintenance';
 
 const baseConsumable: Consumable = {
   id: 'consumable-1',
@@ -11,6 +11,25 @@ const baseConsumable: Consumable = {
 };
 
 describe('maintenance reminders', () => {
+  it('uses a planned date until maintenance is completed', () => {
+    const planned = { ...baseConsumable, plannedMaintenanceDate: '2026-05-01' };
+    expect(getMaintenanceInfo(planned, new Date(2026, 3, 30, 23)).daysRemaining).toBe(1);
+    const done = markConsumableMaintained(planned, new Date(2026, 4, 1, 10));
+    expect(done.plannedMaintenanceDate).toBeUndefined();
+    expect(getMaintenanceInfo(done, new Date(2026, 4, 1, 23)).daysRemaining).toBe(10);
+  });
+
+  it('compares local calendar dates across midnight', () => {
+    const item = { ...baseConsumable, maintenanceIntervalDays: 1, createdAt: new Date(2026, 8, 8, 23).toISOString() };
+    expect(getMaintenanceInfo(item, new Date(2026, 8, 9, 1)).daysRemaining).toBe(0);
+  });
+
+  it('validates leap years and typed date formats', () => {
+    expect(parseCalendarDate('2028-02-29')).toBeInstanceOf(Date);
+    for (const value of ['2027-02-29', '2026-13-01', '115-09-08', '2026-2-3']) {
+      expect(parseCalendarDate(value)).toBeUndefined();
+    }
+  });
   it('marks consumables as ok when the next maintenance date is more than seven days away', () => {
     const info = getMaintenanceInfo(baseConsumable, new Date('2026-04-02T00:00:00.000Z'));
 

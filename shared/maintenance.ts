@@ -11,9 +11,23 @@ export type MaintenanceInfo = {
 
 const millisecondsPerDay = 24 * 60 * 60 * 1000;
 
+export function localDateString(value = new Date()): string {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+}
+
+export function parseCalendarDate(value: string): Date | undefined {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isFinite(date.getTime()) && localDateString(date) === value ? date : undefined;
+}
+
+function localDayNumber(date: Date): number {
+  return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / millisecondsPerDay;
+}
+
 export function addDays(date: Date, days: number): Date {
   const next = new Date(date);
-  next.setUTCDate(next.getUTCDate() + days);
+  next.setDate(next.getDate() + days);
   return next;
 }
 
@@ -27,10 +41,9 @@ export function getMaintenanceInfo(consumable: Consumable, today = new Date()): 
   }
 
   const basisDate = new Date(consumable.lastMaintainedAt ?? consumable.createdAt);
-  const nextMaintenanceDate = addDays(basisDate, consumable.maintenanceIntervalDays);
-  const daysRemaining = Math.ceil(
-    (startOfUtcDay(nextMaintenanceDate).getTime() - startOfUtcDay(today).getTime()) / millisecondsPerDay,
-  );
+  const nextMaintenanceDate = (consumable.plannedMaintenanceDate && parseCalendarDate(consumable.plannedMaintenanceDate))
+    || addDays(basisDate, consumable.maintenanceIntervalDays);
+  const daysRemaining = localDayNumber(nextMaintenanceDate) - localDayNumber(today);
   const status: MaintenanceStatus = daysRemaining <= 0 ? 'due' : daysRemaining <= 7 ? 'soon' : 'ok';
 
   return {
@@ -47,6 +60,7 @@ export function markConsumableMaintained(consumable: Consumable, maintainedAt = 
   return {
     ...consumable,
     lastMaintainedAt: timestamp,
+    plannedMaintenanceDate: undefined,
     updatedAt: timestamp,
   };
 }

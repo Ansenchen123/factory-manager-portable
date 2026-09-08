@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { createEmptyFactoryData, validateFactoryData } from '../shared/schema';
+import { consumableSchema, createEmptyFactoryData, validateFactoryData } from '../shared/schema';
 
 describe('factory data schema', () => {
+  it('preserves planned dates while remaining compatible with existing records', () => {
+    const item = { id: 'c', name: '濾芯', maintenanceIntervalDays: 30,
+      createdAt: '2026-04-26T00:00:00.000Z', updatedAt: '2026-04-26T00:00:00.000Z' };
+    expect(consumableSchema.parse(item)).toEqual(item);
+    expect(consumableSchema.parse({ ...item, plannedMaintenanceDate: '2028-02-29' }).plannedMaintenanceDate).toBe('2028-02-29');
+    expect(() => consumableSchema.parse({ ...item, plannedMaintenanceDate: '2027-02-29' })).toThrow();
+  });
   it('creates valid empty factory data', () => {
     const data = createEmptyFactoryData(new Date('2026-04-26T00:00:00.000Z'));
 

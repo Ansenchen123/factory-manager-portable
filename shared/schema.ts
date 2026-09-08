@@ -9,6 +9,7 @@ export const consumableSchema = z.object({
   maintenanceIntervalDays: z.number().int().positive(),
   notes: z.string().optional(),
   lastMaintainedAt: isoDateString.optional(),
+  plannedMaintenanceDate: z.iso.date().optional(),
   createdAt: isoDateString,
   updatedAt: isoDateString,
 });

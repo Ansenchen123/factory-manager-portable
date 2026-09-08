@@ -20,7 +20,7 @@
 
 body {
   margin: 0;
-  min-width: 1100px;
+  min-width: 320px;
   min-height: 100vh;
   background: #f3f5f7;
 }
@@ -116,7 +116,7 @@ textarea:disabled {
 }
 
 .startAction small {
-  color: #64727d;
+  color: #53616c;
   font-size: 13px;
   line-height: 1.5;
 }
@@ -253,7 +253,8 @@ textarea:disabled {
 
 .panel {
   display: flex;
-  min-height: calc(100vh - 172px);
+  min-width: 0;
+  min-height: 500px;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid #d8dee4;
@@ -329,7 +330,7 @@ textarea:disabled {
 .itemMain span,
 .consumableTitle span,
 .notes {
-  color: #64727d;
+  color: #53616c;
   font-size: 13px;
 }
 
@@ -475,7 +476,7 @@ textarea:disabled {
   padding: 18px;
   border: 1px dashed #cfd6dd;
   border-radius: 8px;
-  color: #64727d;
+  color: #53616c;
   text-align: center;
 }
 
@@ -538,7 +539,7 @@ textarea:disabled {
 }
 
 .maintenanceMeta dt {
-  color: #64727d;
+  color: #53616c;
   font-size: 12px;
 }
 
@@ -552,4 +553,49 @@ textarea:disabled {
 .notes {
   margin: 0 0 12px;
   line-height: 1.5;
+}
+
+/* Stable feedback and usable controls at desktop zoom and narrow widths. */
+button:focus-visible { outline: 3px solid #1d6d5f; outline-offset: 3px; }
+button:hover:not(:disabled) { filter: brightness(0.96); }
+button { touch-action: manipulation; }
+.itemTools { display: flex; flex-wrap: wrap; gap: 6px; grid-column: 1 / -1; }
+.consumableItem > .itemTools { margin-top: 10px; }
+.panelHeader { flex-wrap: wrap; gap: 8px; }
+.panelContext, .fieldHint { margin: 0; padding: 10px 14px; font-size: 13px; line-height: 1.6; color: #53616c; overflow-wrap: anywhere; }
+.fieldHint { padding: 0; }
+.itemActions, .formActions, .summaryStrip { flex-wrap: wrap; }
+.itemMain, .notes, .consumableTitle strong { overflow-wrap: anywhere; }
+.notes { white-space: pre-wrap; }
+.listItem { grid-template-columns: minmax(0, 1fr); }
+.itemMain { min-height: 44px; }
+.iconButton { width: 38px; min-height: 38px; }
+.entityForm input { height: 40px; }
+.primaryButton, .successButton, .secondaryButton, .dangerButton { min-height: 38px; }
+.dangerButton { color: #9f1d20; border-color: #e5a4a4; }
+.consumableTitle .statusOk { color: #1d6d5f; }
+.consumableTitle .statusSoon { color: #8a5a00; }
+.consumableTitle .statusDue { color: #9f1d20; }
+.appShell > .notice { position: fixed; right: 16px; bottom: 16px; z-index: 20; display: flex; align-items: flex-start; gap: 12px; max-width: min(520px, calc(100vw - 32px)); margin: 0; box-shadow: 0 4px 16px #17202618; line-height: 1.6; }
+.noticeClose { flex: 0 0 32px; min-height: 32px; border: 0; border-radius: 4px; background: transparent; color: inherit; font-size: 22px; }
+.appShell { padding-bottom: 100px; }
+@media (max-width: 1199px) {
+  .workspaceGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .widePanel { grid-column: 1 / -1; }
+  .appHeader, .systemBar { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .systemBar > div { max-width: 100%; }
+}
+@media (max-width: 639px) {
+  .appShell, .startScreen { padding: 12px; }
+  .startPanel { padding: 18px; }
+  .workspaceGrid, .startActions { grid-template-columns: minmax(0, 1fr); }
+  .widePanel { grid-column: auto; }
+  .panel { min-height: 0; }
+  .formRow, .systemActions { flex-direction: column; align-items: stretch; }
+  .systemBar div:first-child { flex-wrap: wrap; }
+  .summaryStrip { gap: 6px; }
+  .summaryStrip span { min-width: 0; }
+  .consumableTitle { flex-wrap: wrap; }
+  .maintenanceMeta { grid-template-columns: minmax(0, 1fr); }
+  .startAction { min-height: 120px; }
 }
