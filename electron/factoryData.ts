@@ -8,6 +8,7 @@ export type DataPathOptions = {
   platform: NodeJS.Platform;
   execPath: string;
   cwd: string;
+  portableExecutableDir?: string;
 };
 
 export function resolvePortableDataPath(options: DataPathOptions): string {
@@ -19,6 +20,12 @@ export function resolvePortableDataPath(options: DataPathOptions): string {
     return path.posix.resolve(path.posix.dirname(options.execPath), '..', '..', '..', 'data', 'factory-data.json');
   }
 
+  // electron-builder's portable launcher extracts the executable into a temporary
+  // directory and exposes the original location through this environment value.
+  if (options.platform === 'win32' && options.portableExecutableDir) {
+    return path.win32.join(options.portableExecutableDir, 'data', 'factory-data.json');
+  }
+
   return path.join(path.dirname(options.execPath), 'data', 'factory-data.json');
 }
 
@@ -28,6 +35,7 @@ export function getFactoryDataPath(): string {
     platform: process.platform,
     execPath: process.execPath,
     cwd: process.cwd(),
+    portableExecutableDir: process.env.PORTABLE_EXECUTABLE_DIR,
   });
 }
 

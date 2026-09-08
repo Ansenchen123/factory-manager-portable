@@ -24,6 +24,12 @@ afterEach(async () => {
 });
 
 describe('portable data path', () => {
+  it('keeps Windows single-file portable data outside the extraction directory', () => {
+    expect(resolvePortableDataPath({
+      isPackaged: true, platform: 'win32', execPath: 'C:\\Temp\\extract\\Factory.exe',
+      cwd: 'C:\\Temp', portableExecutableDir: 'D:\\Factory',
+    })).toBe(path.win32.join('D:\\Factory', 'data', 'factory-data.json'));
+  });
   it('uses the project data directory during development', () => {
     const projectDirectory = process.platform === 'win32' ? 'C:\\Project' : '/project';
     const appDirectory = process.platform === 'win32' ? 'C:\\App' : '/opt/factory-manager-portable';
