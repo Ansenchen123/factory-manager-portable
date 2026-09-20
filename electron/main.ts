@@ -18,6 +18,7 @@ function createWindow(): void {
     minWidth: 640,
     minHeight: 480,
     title: '工廠管理軟體',
+    icon: path.join(app.getAppPath(), 'assets', 'icon.png'),
     backgroundColor: '#f6f7f9',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
