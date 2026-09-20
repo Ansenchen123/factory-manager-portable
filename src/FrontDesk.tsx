@@ -48,7 +48,12 @@ export function FrontDesk({ data, today, busy, onComplete }: Props) {
           return <li className="taskRow" key={JSON.stringify([line.id, machine.id, item.id])}>
             <div className="taskDetails">
               <p className="taskLocation">{location}</p>
-              <h3>{item.name}</h3>
+              <div className="taskTitle">
+                <h3>{item.name}</h3>
+                <span className={`statusPill ${info.daysRemaining < 0 ? 'statusDue' : info.daysRemaining === 0 ? 'statusSoon' : 'statusOk'}`}>
+                  {info.daysRemaining < 0 ? `逾期 ${-info.daysRemaining} 天` : info.daysRemaining === 0 ? '今天到期' : `${info.daysRemaining} 天後`}
+                </span>
+              </div>
               <p className="taskMeta">
                 {item.sku && <span>料號 {item.sku}</span>}
                 {machine.code && <span>機台編號 {machine.code}</span>}
@@ -57,9 +62,6 @@ export function FrontDesk({ data, today, busy, onComplete }: Props) {
               </p>
               {item.notes && <p className="taskNotes">{item.notes}</p>}
             </div>
-            <span className={`statusPill ${info.daysRemaining < 0 ? 'statusDue' : info.daysRemaining === 0 ? 'statusSoon' : 'statusOk'}`}>
-              {info.daysRemaining < 0 ? `逾期 ${-info.daysRemaining} 天` : info.daysRemaining === 0 ? '今天到期' : `${info.daysRemaining} 天後`}
-            </span>
             <label className={`completionCheck${done ? ' isComplete' : ''}`}>
               <input type="checkbox" checked={done} disabled={busy || done}
                 aria-label={`完成 ${line.name} / ${machine.name} / ${item.name}`}
@@ -89,9 +91,9 @@ export function FrontDesk({ data, today, busy, onComplete }: Props) {
       <p>搜尋涵蓋所有耗材，也可提前完成維護。勾選後自動儲存，15 秒內可復原。</p>
     </div>
     {entries.length === 0 && <p className="emptyState">尚無耗材，請至右上角「後台管理」建立產線、機台與耗材。</p>}
-    {terms.length > 0 ? list('搜尋結果', 'search-results-heading', matches, '找不到符合的條目，請換個關鍵字。') : <>
+    {terms.length > 0 ? list('搜尋結果', 'search-results-heading', matches, '找不到符合的條目，請換個關鍵字。') : <div className="taskSections">
       {list('已逾期', 'overdue-heading', overdue, '目前沒有逾期項目。')}
       {list('今天需要維護', 'today-heading', dueToday, '今天沒有待維護項目。')}
-    </>}
+    </div>}
   </div>;
 }

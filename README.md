@@ -10,6 +10,7 @@ Factory Manager Portable is an Electron desktop app for managing factory product
 
 - Choose a save file, then enter the maintenance front desk by default. Use **後台管理** to access the existing production-line, machine, and consumable editor, and **返回前台** to return.
 - See overdue items and items due today in separate lists, each showing its production line and machine.
+- Compact desktop layout places the two lists side by side. Six typical items (three per list) fit at 1280×720 or 1024×768 without scrolling; narrow windows stack the lists, and larger datasets remain scrollable without clipping content.
 - Search all consumables by production line, machine name/code, consumable name, or SKU, including future maintenance items.
 - Check an item to save today's maintenance and recalculate its next due date. Each completion can be undone for 15 seconds while staying in the front desk; switching files or entering administration clears these temporary undo actions. Search results show items completed today as checked.
 - Create, edit, and delete production lines, machines, and consumables.

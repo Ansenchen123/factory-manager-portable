@@ -22,7 +22,9 @@ const assert = require('node:assert/strict');
   const data = { schemaVersion: 1, ...dates, productionLines: [
     { id: 'a', name: '精密加工一線', ...dates, machines: [
       { id: 'a1', name: 'CNC 立式加工中心', code: 'CNC-01', location: '一樓 A 區', ...dates,
-        consumables: [item('filter', '冷卻液濾芯', -3, 'FILTER-01'), item('belt', '主軸傳動皮帶', 0, 'BELT-02')] },
+        consumables: [item('filter', '冷卻液濾芯', -3, 'FILTER-01'), item('belt', '主軸傳動皮帶', 0, 'BELT-02'),
+          item('oil-filter', '液壓回油濾網', -2, 'FILTER-02'), item('air-filter', '排風過濾棉', -1, 'FILTER-03'),
+          item('oil', '主軸潤滑油', 0, 'OIL-01'), item('hose', '冷卻水管', 0, 'HOSE-01')] },
     ] },
     { id: 'b', name: '自動包裝二線', ...dates, machines: [
       { id: 'b1', name: '連續式封口機', code: 'PK-02', location: '二樓 B 區', ...dates,
@@ -53,10 +55,13 @@ const assert = require('node:assert/strict');
     assert.equal(await page.getByRole('region', { name: /今天需要維護/ }).getByText('主軸傳動皮帶', { exact: true }).count(), 1);
     await button('關閉提示').click();
     const layouts = [];
-    for (const width of [1440, 1024, 768, 320]) {
-      await page.setViewportSize({ width, height: 900 });
+    for (const [width, height] of [[1280, 720], [1366, 768], [1440, 900], [1024, 768], [768, 900], [320, 900]]) {
+      await page.setViewportSize({ width, height });
       await page.screenshot({ path: path.join(fixture, `front-${width}.png`), fullPage: true });
-      layouts.push(await page.evaluate(() => ({ width: innerWidth, scrollWidth: document.documentElement.scrollWidth })));
+      const layout = await page.evaluate(() => ({ width: innerWidth, height: innerHeight,
+        scrollWidth: document.documentElement.scrollWidth, scrollHeight: document.documentElement.scrollHeight }));
+      layouts.push(layout);
+      if (width >= 1024) assert(layout.scrollHeight <= height, `Six maintenance items should fit without scrolling: ${JSON.stringify(layout)}`);
     }
     assert(layouts.every(layout => layout.scrollWidth <= layout.width), JSON.stringify(layouts));
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -64,7 +69,7 @@ const assert = require('node:assert/strict');
     await page.keyboard.press('Space');
     await saved();
     assert.equal(await check('冷卻液濾芯').count(), 0);
-    assert(await check('主軸傳動皮帶').evaluate(element => element === document.activeElement), 'Keyboard focus must advance after completion');
+    assert(await check('液壓回油濾網').evaluate(element => element === document.activeElement), 'Keyboard focus must advance after completion');
     assert((await read()).productionLines[0].machines[0].consumables[0].lastMaintainedAt);
     await page.getByRole('button', { name: /復原.*冷卻液濾芯/ }).click();
     await saved();

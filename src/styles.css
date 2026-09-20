@@ -594,48 +594,60 @@ button { touch-action: manipulation; }
 .appShell > .notice { position: fixed; right: 16px; bottom: 16px; z-index: 20; display: flex; align-items: flex-start; gap: 12px; max-width: min(520px, calc(100vw - 32px)); margin: 0; box-shadow: 0 4px 16px #17202618; line-height: 1.6; }
 .noticeClose { flex: 0 0 32px; min-height: 32px; border: 0; border-radius: 4px; background: transparent; color: inherit; font-size: 22px; }
 .appShell { padding-bottom: 100px; }
-.frontShell { max-width: 1248px; margin: 0 auto; padding-bottom: 200px; }
+.frontShell { max-width: 1440px; margin: 0 auto; padding: 16px; }
+.frontShell .appHeader { flex-direction: row; align-items: center; gap: 12px; margin-bottom: 10px; }
+.frontShell .appHeader > div { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 16px; }
+.frontShell .appHeader h1 { margin: 0; font-size: 26px; }
+.frontShell .appHeader p { font-size: 13px; line-height: 1.5; }
+.frontShell .systemBar { flex-direction: row; align-items: center; gap: 12px; padding: 6px 10px; margin-bottom: 12px; font-size: 13px; }
+.frontShell .systemBar > div:first-child { flex: 1; }
 .viewSwitch { flex: 0 0 auto; min-height: 44px; }
 .adminSummary { margin-bottom: 16px; width: fit-content; }
 .frontShell:has(.undoPanel) > .errorNotice { bottom: calc(32vh + 32px); }
-.frontDesk { display: grid; gap: 24px; }
-.maintenanceSearch { margin-top: 12px; }
-.maintenanceSearch > label { display: block; margin-bottom: 8px; font-weight: 700; }
-.searchField { display: flex; gap: 12px; align-items: center; padding: 6px 12px; background: white; border: 1px solid #cfd6dd; border-radius: 8px; }
+.frontDesk { display: grid; gap: 14px; }
+.taskSections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.maintenanceSearch { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 14px; }
+.maintenanceSearch > label { font-size: 14px; font-weight: 700; }
+.searchField { display: flex; gap: 10px; align-items: center; padding: 2px 10px; background: white; border: 1px solid #cfd6dd; border-radius: 6px; }
 .searchField:focus-within { border-color: #1d6d5f; box-shadow: 0 0 0 3px #1d6d5f24; }
 .searchField > svg { flex: 0 0 auto; color: #53616c; }
-.searchField input { flex: 1; min-width: 0; height: 40px; border: 0; outline: none; color: #172026; background: transparent; }
+.searchField input { flex: 1; min-width: 0; height: 36px; border: 0; outline: none; color: #172026; background: transparent; }
 .searchField button { flex: 0 0 auto; }
-.maintenanceSearch > p { margin: 8px 0 0; color: #53616c; font-size: 13px; line-height: 1.6; }
+.maintenanceSearch > p { grid-column: 2; margin: 0; color: #53616c; font-size: 12px; line-height: 1.5; }
 .taskSection { border: 1px solid #d8dee4; border-radius: 8px; background: white; overflow: hidden; }
-.taskSectionHeader { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid #e8ecef; }
-.taskSectionHeader h2 { margin: 0; font-size: 19px; }
+.taskSectionHeader { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #e8ecef; background: #fafbfc; }
+.taskSectionHeader h2 { margin: 0; font-size: 17px; }
 .taskSectionHeader > span { color: #53616c; font-size: 13px; }
 .taskCount { margin-left: 8px; color: #53616c; font-size: 16px; font-weight: 500; }
 .taskList { margin: 0; padding: 0; list-style: none; }
-.taskRow { display: grid; grid-template-columns: minmax(0, 1fr) auto 100px; align-items: center; gap: 24px; padding: 20px; }
+.taskRow { display: grid; grid-template-columns: minmax(0, 1fr) 76px; align-items: center; gap: 12px; padding: 12px 14px; }
 .taskRow + .taskRow { border-top: 1px solid #e8ecef; }
 .taskDetails { min-width: 0; overflow-wrap: anywhere; }
-.taskLocation { margin: 0 0 6px; color: #34424c; font-size: 14px; font-weight: 650; }
-.taskDetails h3 { margin: 0 0 8px; font-size: 20px; color: #101820; }
-.taskMeta { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 0; font-size: 13px; color: #53616c; line-height: 1.6; }
-.taskNotes { margin: 8px 0 0; color: #53616c; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
-.completionCheck { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 60px; cursor: pointer; color: #1d6d5f; font-size: 14px; font-weight: 700; }
+.taskLocation { margin: 0 0 4px; color: #34424c; font-size: 13px; font-weight: 650; line-height: 1.5; }
+.taskTitle { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.taskDetails h3 { margin: 0; font-size: 18px; color: #101820; line-height: 1.4; }
+.taskTitle .statusPill { padding: 3px 7px; }
+.taskMeta { display: flex; flex-wrap: wrap; gap: 2px 12px; margin: 4px 0 0; font-size: 13px; color: #53616c; line-height: 1.5; }
+.taskNotes { margin: 4px 0 0; color: #53616c; font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
+.completionCheck { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 52px; cursor: pointer; color: #1d6d5f; font-size: 13px; font-weight: 700; }
 .completionCheck input { width: 26px; height: 26px; margin: 0; accent-color: #1d6d5f; cursor: pointer; }
 .completionCheck input:focus-visible { outline: 3px solid #1d6d5f; outline-offset: 4px; }
 .completionCheck.isComplete { color: #53616c; }
-.taskEmpty { padding: 28px 20px; margin: 0; color: #53616c; line-height: 1.6; }
-.undoPanel { position: fixed; z-index: 15; bottom: 16px; left: 50%; transform: translateX(-50%); width: min(720px, calc(100% - 32px)); max-height: 32vh; overflow: auto; padding: 12px 16px; border: 1px solid #9fd4ca; border-radius: 8px; background: #eaf8f4; color: #1d6d5f; box-shadow: 0 4px 16px #17202618; }
-.undoPanel > p { margin: 0 0 8px; font-size: 13px; }
-.undoRow { display: flex; gap: 16px; justify-content: space-between; align-items: center; padding: 6px 0; }
+.taskEmpty { padding: 20px 14px; margin: 0; color: #53616c; line-height: 1.6; }
+.undoPanel { position: sticky; z-index: 15; bottom: 12px; width: min(720px, 100%); margin: 10px auto 0; max-height: 32vh; overflow: auto; padding: 8px 12px; border: 1px solid #9fd4ca; border-radius: 8px; background: #eaf8f4; color: #1d6d5f; box-shadow: 0 4px 16px #17202618; }
+.undoPanel > p { margin: 0 0 2px; font-size: 12px; }
+.undoRow { display: flex; gap: 12px; justify-content: space-between; align-items: center; padding: 2px 0; font-size: 13px; }
 .undoRow > span { overflow-wrap: anywhere; min-width: 0; font-weight: 650; }
-.undoRow > button { flex: 0 0 auto; min-height: 44px; }
+.undoRow > button { flex: 0 0 auto; min-height: 38px; }
 @media (max-width: 1199px) {
   .workspaceGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .widePanel { grid-column: 1 / -1; }
   .appHeader, .systemBar { align-items: flex-start; flex-direction: column; gap: 12px; }
   .frontShell .appHeader { flex-direction: row; align-items: center; }
   .systemBar > div { max-width: 100%; }
+}
+@media (max-width: 959px) {
+  .taskSections { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 639px) {
   .appShell, .startScreen { padding: 12px; }
@@ -650,17 +662,19 @@ button { touch-action: manipulation; }
   .consumableTitle { flex-wrap: wrap; }
   .maintenanceMeta { grid-template-columns: minmax(0, 1fr); }
   .startAction { min-height: 120px; }
-  .frontShell { padding-bottom: 200px; }
+  .frontShell { padding: 12px; }
   .frontShell .appHeader { align-items: flex-start; }
   .frontShell .appHeader h1 { font-size: 25px; }
   .frontShell .appHeader p { font-size: 13px; line-height: 1.6; }
   .viewSwitch { padding: 0 8px; font-size: 13px; }
+  .frontShell .systemBar { flex-direction: column; align-items: stretch; gap: 8px; }
+  .frontShell .systemActions { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .maintenanceSearch { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .maintenanceSearch > p { grid-column: 1; }
   .searchField { gap: 8px; flex-wrap: wrap; }
   .searchField input { width: 100px; }
-  .taskSectionHeader, .taskRow { padding: 16px; }
+  .taskSectionHeader, .taskRow { padding: 12px; }
   .taskSectionHeader > span { display: none; }
-  .taskRow { grid-template-columns: minmax(0, 1fr) 72px; gap: 12px; }
-  .taskRow > .taskDetails { grid-column: 1; grid-row: 1; }
-  .taskRow > .statusPill { grid-column: 1; grid-row: 2; justify-self: start; }
-  .taskRow > .completionCheck { grid-column: 2; grid-row: 1 / 3; }
+  .taskRow { grid-template-columns: minmax(0, 1fr) 64px; gap: 8px; }
+  .undoRow > button { min-height: 44px; }
 }
