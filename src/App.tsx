@@ -714,23 +714,23 @@ export function App() {
   }
 
   return (
-    <main className={`appShell ${view === 'front' ? 'frontShell' : ''}`}>
+    <main className={`appShell ${view === 'front' ? 'frontShell' : 'adminShell'}`}>
       <header className="appHeader">
         <div>
           <h1>{view === 'front' ? '維護工作台' : '後台管理'}</h1>
           <p>{view === 'front' ? `${today.replaceAll('-', '/')} · 確認設備位置，勾選完成維護。` : '管理產線、機台、耗材與維護提醒。'}</p>
         </div>
-        <button type="button" className="secondaryButton viewSwitch" disabled={isBusy} onClick={switchView}>
-          {view === 'front' ? '後台管理' : '返回前台'}
-        </button>
-      </header>
-      {view === 'admin' && <div className="summaryStrip adminSummary" aria-label="資料摘要">
+        {view === 'admin' && <div className="summaryStrip adminSummary" aria-label="資料摘要">
           <span>產線 {data.productionLines.length}</span>
           <span>機台 {data.productionLines.reduce((count, line) => count + line.machines.length, 0)}</span>
           <span>耗材 {allConsumables.length}</span>
           <span className={dueCount > 0 ? 'dangerText' : ''}>到期 {dueCount}</span>
           <span className={soonCount > 0 ? 'warningText' : ''}>7 日內到期 {soonCount}</span>
         </div>}
+        <button type="button" className="secondaryButton viewSwitch" disabled={isBusy} onClick={switchView}>
+          {view === 'front' ? '後台管理' : '返回前台'}
+        </button>
+      </header>
 
       <section className="systemBar" aria-live="polite">
         <div>
@@ -885,7 +885,7 @@ export function App() {
           </div>
 
           <p className="fieldHint dragHint">拖動卡片可排序，拖到左側產線卡片可移轉機台。</p>
-          <form inert={transferring} noValidate autoComplete="off" className="entityForm" id="machine-form" onSubmit={submitMachine}>
+          {selectedLine && <form inert={transferring} noValidate autoComplete="off" className="entityForm" id="machine-form" onSubmit={submitMachine}>
             <h3>{machineForm.id ? '編輯機台' : '新增機台'}</h3>
             <label>
               機台名稱
@@ -932,7 +932,7 @@ export function App() {
                 </button>
               )}
             </div>
-          </form>
+          </form>}
         </section>
 
         <section className="panel widePanel" aria-labelledby="consumables-heading">
@@ -1002,7 +1002,7 @@ export function App() {
             )}
           </div>
 
-          <form inert={transferring} noValidate autoComplete="off" className="entityForm" id="consumable-form" onSubmit={submitConsumable}>
+          {selectedMachine && <form inert={transferring} noValidate autoComplete="off" className="entityForm" id="consumable-form" onSubmit={submitConsumable}>
             <h3>{consumableForm.id ? '編輯耗材' : '新增耗材'}</h3>
             <div className="formRow">
               <label>
@@ -1021,7 +1021,6 @@ export function App() {
                   onChange={(event) => setConsumableForm({ ...consumableForm, sku: event.target.value })}
                 />
               </label>
-            </div>
             <label>
               維護週期（日）
               <input
@@ -1034,6 +1033,7 @@ export function App() {
                 }
               />
             </label>
+            </div>
             <div className="formRow">
               <label>上次維護日期
                 <input disabled={!selectedMachine} type="text" placeholder="YYYY-MM-DD" aria-describedby="date-help"
@@ -1044,7 +1044,7 @@ export function App() {
                   value={consumableForm.plannedMaintenanceDate} onChange={event => setConsumableForm({ ...consumableForm, plannedMaintenanceDate: event.target.value })} />
               </label>
             </div>
-            <p className="fieldHint" id="date-help">西元年月日，例如 2026-09-08。預定日期留空時，依維護週期計算。</p>
+            <p className="fieldHint" id="date-help">西元日期 YYYY-MM-DD；預定留空時依週期計算。</p>
             <label>
               備註
               <textarea aria-label="備註"
@@ -1064,7 +1064,7 @@ export function App() {
                 </button>
               )}
             </div>
-          </form>
+          </form>}
         </section>
       </section>}
       {undos.length > 0 && <aside className="undoPanel" aria-label="復原維護" aria-live="polite">

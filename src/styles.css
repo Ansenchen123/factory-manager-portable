@@ -639,6 +639,43 @@ button { touch-action: manipulation; }
 .undoRow { display: flex; gap: 12px; justify-content: space-between; align-items: center; padding: 2px 0; font-size: 13px; }
 .undoRow > span { overflow-wrap: anywhere; min-width: 0; font-weight: 650; }
 .undoRow > button { flex: 0 0 auto; min-height: 38px; }
+.adminShell { max-width: 1600px; margin: 0 auto; padding: 16px; }
+.adminShell .appHeader { flex-direction: row; align-items: center; gap: 12px; margin-bottom: 10px; }
+.adminShell .appHeader > div:first-child { display: flex; flex: 1; align-items: baseline; flex-wrap: wrap; gap: 4px 14px; }
+.adminShell .appHeader h1 { margin: 0; font-size: 26px; }
+.adminShell .appHeader p { font-size: 13px; line-height: 1.5; }
+.adminShell .adminSummary { margin: 0; gap: 4px; padding: 4px; }
+.adminShell .adminSummary span { min-width: 0; padding: 5px 7px; font-size: 12px; }
+.adminShell .systemBar { flex-direction: row; align-items: center; gap: 12px; padding: 6px 10px; margin-bottom: 12px; font-size: 13px; }
+.adminShell .systemBar > div:first-child { flex: 1; }
+.adminShell .workspaceGrid { grid-template-columns: minmax(0, 0.75fr) minmax(0, 1fr) minmax(0, 1.4fr); gap: 12px; }
+.adminShell .widePanel { grid-column: auto; }
+.adminShell .panel { min-height: 0; }
+.adminShell .panelHeader { padding: 10px; gap: 6px; }
+.adminShell .panelHeader h2 { font-size: 17px; }
+.adminShell .panelHeader span { font-size: 12px; }
+.adminShell .panelContext { padding: 6px 10px; font-size: 12px; }
+.adminShell .itemList { flex: 0 1 auto; gap: 8px; padding: 8px; }
+.adminShell .emptyState { padding: 10px; font-size: 13px; }
+.adminShell .dragHint { padding: 0 10px 8px; font-size: 12px; line-height: 1.5; }
+.adminShell .entityForm { gap: 8px; padding: 10px; }
+.adminShell .entityForm h3 { font-size: 14px; }
+.adminShell .entityForm label { gap: 4px; }
+.adminShell .entityForm input { height: 34px; padding: 0 8px; }
+.adminShell .entityForm textarea { height: 48px; min-height: 48px; padding: 6px 8px; }
+.adminShell .entityForm .fieldHint { font-size: 12px; line-height: 1.5; }
+.adminShell .formRow { gap: 8px; }
+.adminShell .primaryButton, .adminShell .secondaryButton, .adminShell .successButton, .adminShell .dangerButton { min-height: 34px; font-size: 13px; }
+.adminShell .viewSwitch { min-height: 44px; }
+.adminShell .iconButton { width: 34px; min-height: 34px; }
+.adminShell .listItem { gap: 6px; }
+.adminShell .consumableItem { display: flex; flex-wrap: wrap; gap: 6px 8px; padding: 8px; }
+.adminShell .consumableTitle { flex: 0 0 100%; }
+.adminShell .consumableTitle div { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.adminShell .consumableItem > .notes { flex: 0 0 100%; margin: 0; }
+.adminShell .maintenanceMeta { flex: 0 0 100%; gap: 6px; margin: 2px 0; }
+.adminShell .maintenanceMeta div { padding: 6px; }
+.adminShell .consumableItem > .itemTools { margin-top: 0; }
 @media (max-width: 1199px) {
   .workspaceGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .widePanel { grid-column: 1 / -1; }
@@ -648,6 +685,10 @@ button { touch-action: manipulation; }
 }
 @media (max-width: 959px) {
   .taskSections { grid-template-columns: minmax(0, 1fr); }
+  .adminShell .workspaceGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .adminShell .widePanel { grid-column: 1 / -1; }
+  .adminShell .appHeader { flex-wrap: wrap; }
+  .adminShell .adminSummary { order: 1; width: 100%; }
 }
 @media (max-width: 639px) {
   .appShell, .startScreen { padding: 12px; }
@@ -677,4 +718,10 @@ button { touch-action: manipulation; }
   .taskSectionHeader > span { display: none; }
   .taskRow { grid-template-columns: minmax(0, 1fr) 64px; gap: 8px; }
   .undoRow > button { min-height: 44px; }
+  .adminShell { padding: 12px; }
+  .adminShell .workspaceGrid { grid-template-columns: minmax(0, 1fr); }
+  .adminShell .widePanel { grid-column: auto; }
+  .adminShell .systemBar { flex-direction: column; align-items: stretch; gap: 8px; }
+  .adminShell .systemActions { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .adminShell .entityForm input { height: 40px; }
 }

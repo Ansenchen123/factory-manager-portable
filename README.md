@@ -14,6 +14,7 @@ Factory Manager Portable is an Electron desktop app for managing factory product
 - Search all consumables by production line, machine name/code, consumable name, or SKU, including future maintenance items.
 - Check an item to save today's maintenance and recalculate its next due date. Each completion can be undone for 15 seconds while staying in the front desk; switching files or entering administration clears these temporary undo actions. Search results show items completed today as checked.
 - Create, edit, and delete production lines, machines, and consumables.
+- Administration uses compact panels with no fixed empty height. Machine and consumable forms appear after selecting their parent line or machine; an empty save fits the default desktop window without scrolling.
 - Store factory data in a portable JSON file that can be opened on another packaged build.
 - Create a new data file, open an existing file, or load the default runtime data file.
 - Validate the saved JSON shape with Zod before writes complete.
@@ -106,6 +107,8 @@ node scripts/desktop-smoke.cjs
 The test creates an isolated run directory under `test-data/runtime/` for its data, profile, and screenshots, exercises real Electron file persistence and native clipboard shortcuts, and prints the run directory in its output. It does not open existing factory data. Chinese IME mode still needs a manual check with the input method used on the target computer. The drag smoke test (`node scripts/drag-smoke.cjs`) uses the same runtime directory convention. See [test data conventions](test-data/README.md).
 
 Run `node scripts/front-desk-smoke.cjs` with the same prerequisites to verify the front desk using real Electron file writes: overdue/today lists, search, completion, undo, reopening the save, keyboard focus, administration switching, and layouts from 320 to 1440 pixels. All smoke tests use isolated data and leave screenshots under `test-data/runtime/`.
+
+Run `node scripts/admin-layout-smoke.cjs` to verify that an empty administration workspace fits the default window, 1280×720, and 1024×768, then create a line, machine, and consumable through the real UI. Local test packages are built with `npm run package:win -- --publish never`; GitHub publishing requires a separate explicit request for that version.
 
 ## CodeGraph
 
