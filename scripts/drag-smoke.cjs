@@ -55,12 +55,14 @@ const assert = require('node:assert/strict');
       await page.mouse.move(to.x + to.width / 2, y, { steps: 15 });
       await page.mouse.move(to.x + to.width / 2, y, { steps: 2 });
       const preview = page.locator('.dragPreview');
+      await preview.waitFor({ state: 'visible' });
       assert.equal(await preview.count(), 1);
       const appearance = await preview.evaluate(element => ({ opacity: getComputedStyle(element).opacity, pointerEvents: getComputedStyle(element).pointerEvents, hidden: element.getAttribute('aria-hidden') }));
       assert.deepEqual(appearance, { opacity: '0.8', pointerEvents: 'none', hidden: 'true' });
       if (screenshot) await page.screenshot({ path: path.join(fixture, screenshot) });
       await page.mouse.up();
       await saved();
+      await preview.waitFor({ state: 'detached' });
       assert.equal(await preview.count(), 0, 'Preview must disappear after drop');
     }
     await drag('A線', 'B線', 'after', 'drop-after.png');
