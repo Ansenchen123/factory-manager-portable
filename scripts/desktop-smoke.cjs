@@ -26,6 +26,7 @@ const assert = require('node:assert/strict');
     const saved = () => page.locator('.workspaceGrid[aria-busy="false"]').waitFor();
     console.log('Fixture:', fixture);
     await page.getByRole('button', { name: /讀取預設存檔/ }).click();
+    await button('後台管理').click();
     await label('產線名稱').fill('加工一線');
     await button('建立產線').click(); await saved();
     assert(await label('產線名稱').evaluate(el => el === document.activeElement));
@@ -66,6 +67,7 @@ const assert = require('node:assert/strict');
     // Validate persisted data after opening the same file again.
     await page.reload();
     await page.getByRole('button', { name: /讀取預設存檔/ }).click();
+    await button('後台管理').click();
     await button('上移 組裝二線').waitFor();
     assert.equal(await page.locator('.consumableTitle strong').first().textContent(), '冷卻濾芯（副本）');
     await page.setViewportSize({ width: 1440, height: 900 });

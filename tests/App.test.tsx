@@ -41,6 +41,7 @@ const initialData: FactoryData = {
 
 async function openDefaultSave(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: /讀取預設存檔/ }));
+  await user.click(screen.getByRole('button', { name: '後台管理' }));
   await screen.findByText('A線', { selector: 'strong' });
 }
 

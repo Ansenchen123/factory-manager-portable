@@ -8,6 +8,10 @@ Factory Manager Portable is an Electron desktop app for managing factory product
 
 ## Features
 
+- Choose a save file, then enter the maintenance front desk by default. Use **後台管理** to access the existing production-line, machine, and consumable editor, and **返回前台** to return.
+- See overdue items and items due today in separate lists, each showing its production line and machine.
+- Search all consumables by production line, machine name/code, consumable name, or SKU, including future maintenance items.
+- Check an item to save today's maintenance and recalculate its next due date. Each completion can be undone for 15 seconds while staying in the front desk; switching files or entering administration clears these temporary undo actions. Search results show items completed today as checked.
 - Create, edit, and delete production lines, machines, and consumables.
 - Store factory data in a portable JSON file that can be opened on another packaged build.
 - Create a new data file, open an existing file, or load the default runtime data file.
@@ -99,6 +103,8 @@ node scripts/desktop-smoke.cjs
 ```
 
 The test creates an isolated run directory under `test-data/runtime/` for its data, profile, and screenshots, exercises real Electron file persistence and native clipboard shortcuts, and prints the run directory in its output. It does not open existing factory data. Chinese IME mode still needs a manual check with the input method used on the target computer. The drag smoke test (`node scripts/drag-smoke.cjs`) uses the same runtime directory convention. See [test data conventions](test-data/README.md).
+
+Run `node scripts/front-desk-smoke.cjs` with the same prerequisites to verify the front desk using real Electron file writes: overdue/today lists, search, completion, undo, reopening the save, keyboard focus, administration switching, and layouts from 320 to 1440 pixels. All smoke tests use isolated data and leave screenshots under `test-data/runtime/`.
 
 ## CodeGraph
 

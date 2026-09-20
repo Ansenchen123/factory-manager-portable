@@ -1,4 +1,5 @@
 import { ItemTools } from './ItemTools';
+import { FrontDesk } from './FrontDesk';
 import { SelectableCard } from './SelectableCard';
 import { copyItem, moveItem, dropCard, type CardLocation, type DropPosition } from '../shared/items';
 import { CheckCircle2, Edit3, FileJson, FolderOpen, Plus, Save, Trash2, Wrench } from 'lucide-react';
@@ -10,6 +11,15 @@ import { createEmptyFactoryData } from '../shared/schema';
 type FactoryDataSession = {
   data: FactoryData;
   path: string;
+};
+
+type MaintenanceUndo = {
+  lineId: string;
+  machineId: string;
+  item: Consumable;
+  label: string;
+  completedAt: string;
+  expiresAt: number;
 };
 
 type LineForm = {
@@ -104,6 +114,9 @@ function findSelectedMachine(line?: ProductionLine, selectedMachineId?: string):
 export function App() {
   const [data, setData] = useState<FactoryData>(() => createEmptyFactoryData());
   const [dataPath, setDataPath] = useState('');
+  const [view, setView] = useState<'front' | 'admin'>('front');
+  const [sessionVersion, setSessionVersion] = useState(0);
+  const [undos, setUndos] = useState<MaintenanceUndo[]>([]);
   const [selectedLineId, setSelectedLineId] = useState<string>();
   const [selectedMachineId, setSelectedMachineId] = useState<string>();
   const [lineForm, setLineForm] = useState<LineForm>(emptyLineForm);
@@ -126,6 +139,12 @@ export function App() {
   const latestDrafts = useRef({ machine: machineHasDraft, consumable: consumableHasDraft });
   latestDrafts.current = { machine: machineHasDraft, consumable: consumableHasDraft };
   const [today, setToday] = useState(localDateString());
+  useEffect(() => {
+    if (!undos.length) return;
+    const timer = window.setTimeout(() => setUndos(current => current.filter(entry => entry.expiresAt > Date.now())),
+      Math.max(0, Math.min(...undos.map(entry => entry.expiresAt)) - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [undos]);
   useEffect(() => {
     const timer = window.setInterval(() => setToday(localDateString()), 60_000);
     return () => window.clearInterval(timer);
@@ -158,6 +177,10 @@ export function App() {
   const soonCount = allConsumables.filter((consumable) => getMaintenanceInfo(consumable, parseCalendarDate(today)!).status === 'soon').length;
 
   function applySession(session: FactoryDataSession, nextMessage: string) {
+    setView('front');
+    setUndos([]);
+    setSessionVersion(current => current + 1);
+    setToday(localDateString());
     setDragging(undefined);
     setData(session.data);
     setDataPath(session.path);
@@ -207,7 +230,7 @@ export function App() {
       setMessage(successMessage);
       onSuccess?.();
     } catch (saveError) {
-      setError('儲存失敗，輸入內容已保留。請確認存檔位置可寫入後重試。');
+      setError('儲存失敗，變更尚未套用，輸入內容已保留。請確認存檔位置可寫入後重試。');
     } finally {
       saving.current = false;
       setIsBusy(false);
@@ -563,24 +586,27 @@ export function App() {
     }), '耗材已刪除。', () => { if (consumableForm.id === consumableId) setConsumableForm(current => current === consumableForm ? emptyConsumableForm : current); });
   }
 
-  function completeMaintenance(consumableId: string) {
+  function completeMaintenance(consumableId: string, lineId = selectedLine?.id, machineId = selectedMachine?.id) {
+    if (saving.current) return;
     if (consumableForm.id === consumableId && consumableHasDraft && !window.confirm('此耗材有尚未儲存的內容。捨棄變更並記錄今日維護？')) return;
-    if (!selectedLine || !selectedMachine) {
-      return;
-    }
+    const line = data.productionLines.find(entry => entry.id === lineId);
+    const machine = line?.machines.find(entry => entry.id === machineId);
+    const original = machine?.consumables.find(entry => entry.id === consumableId);
+    if (!line || !machine || !original) return;
+    const maintainedAt = new Date();
 
     updateData((current, timestamp) => ({
       ...current,
       productionLines: current.productionLines.map((line) =>
-        line.id === selectedLine.id
+        line.id === lineId
           ? {
               ...line,
               machines: line.machines.map((machine) =>
-                machine.id === selectedMachine.id
+                machine.id === machineId
                   ? {
                       ...machine,
                       consumables: machine.consumables.map((consumable) =>
-                        consumable.id === consumableId ? markConsumableMaintained(consumable, new Date(timestamp)) : consumable,
+                        consumable.id === consumableId ? markConsumableMaintained(consumable, maintainedAt) : consumable,
                       ),
                       updatedAt: timestamp,
                     }
@@ -591,7 +617,44 @@ export function App() {
           : line,
       ),
       updatedAt: timestamp,
-    }), '已記錄今日維護，下次日期已依週期更新。', () => { if (consumableForm.id === consumableId) setConsumableForm(current => current === consumableForm ? emptyConsumableForm : current); });
+    }), '已記錄今日維護，下次日期已依週期更新。', () => {
+      setToday(localDateString());
+      if (view === 'front') setUndos(current => [...current, {
+        lineId: line.id, machineId: machine.id, item: original,
+        label: `${line.name} / ${machine.name} / ${original.name}`,
+        completedAt: maintainedAt.toISOString(), expiresAt: Date.now() + 15_000,
+      }]);
+      if (consumableForm.id === consumableId) setConsumableForm(current => current === consumableForm ? emptyConsumableForm : current);
+    });
+  }
+
+  function undoMaintenance(entry: MaintenanceUndo) {
+    if (saving.current || entry.expiresAt <= Date.now()) return;
+    updateData((current, timestamp) => ({ ...current, updatedAt: timestamp,
+      productionLines: current.productionLines.map(line => line.id !== entry.lineId ? line : {
+        ...line, updatedAt: timestamp, machines: line.machines.map(machine => machine.id !== entry.machineId ? machine : {
+          ...machine, updatedAt: timestamp, consumables: machine.consumables.map(item =>
+            item.id !== entry.item.id || item.lastMaintainedAt !== entry.completedAt ? item : {
+              ...item, lastMaintainedAt: entry.item.lastMaintainedAt,
+              plannedMaintenanceDate: entry.item.plannedMaintenanceDate, updatedAt: timestamp,
+            }),
+        }),
+      }),
+    }), `已復原「${entry.label}」的維護紀錄。`, () => setUndos(current => current.filter(item => item !== entry)));
+  }
+
+  function switchView() {
+    if (saving.current) return;
+    if (view === 'admin' && hasDraft) {
+      if (!window.confirm('有尚未儲存的內容。捨棄變更並返回前台？')) return;
+      setLineForm(emptyLineForm);
+      setMachineForm(emptyMachineForm);
+      setConsumableForm(emptyConsumableForm);
+    }
+    setDragging(undefined);
+    setUndos([]);
+    setMessage('');
+    setView(view === 'front' ? 'admin' : 'front');
   }
 
   if (!hasSession) {
@@ -600,7 +663,7 @@ export function App() {
         <section className="startPanel">
           <div>
             <h1>工廠管理軟體</h1>
-            <p>建立存檔或開啟現有資料。</p>
+            <p>選擇存檔，進入維護工作台。</p>
           </div>
 
           {(error || message) && (
@@ -618,7 +681,7 @@ export function App() {
             >
               <FileJson size={26} />
               <span>開新存檔</span>
-              <small>選擇儲存位置，開始管理產線。</small>
+              <small>建立空白存檔，再至後台設定設備。</small>
             </button>
 
             <button
@@ -651,20 +714,23 @@ export function App() {
   }
 
   return (
-    <main className="appShell">
+    <main className={`appShell ${view === 'front' ? 'frontShell' : ''}`}>
       <header className="appHeader">
         <div>
-          <h1>工廠管理軟體</h1>
-          <p>管理產線、機台、耗材與維護提醒。</p>
+          <h1>{view === 'front' ? '維護工作台' : '後台管理'}</h1>
+          <p>{view === 'front' ? `${today.replaceAll('-', '/')} · 確認設備位置，勾選完成維護。` : '管理產線、機台、耗材與維護提醒。'}</p>
         </div>
-        <div className="summaryStrip" aria-label="資料摘要">
+        <button type="button" className="secondaryButton viewSwitch" disabled={isBusy} onClick={switchView}>
+          {view === 'front' ? '後台管理' : '返回前台'}
+        </button>
+      </header>
+      {view === 'admin' && <div className="summaryStrip adminSummary" aria-label="資料摘要">
           <span>產線 {data.productionLines.length}</span>
           <span>機台 {data.productionLines.reduce((count, line) => count + line.machines.length, 0)}</span>
           <span>耗材 {allConsumables.length}</span>
           <span className={dueCount > 0 ? 'dangerText' : ''}>到期 {dueCount}</span>
           <span className={soonCount > 0 ? 'warningText' : ''}>7 日內到期 {soonCount}</span>
-        </div>
-      </header>
+        </div>}
 
       <section className="systemBar" aria-live="polite">
         <div>
@@ -685,14 +751,14 @@ export function App() {
         </div>
       </section>
 
-      {(error || message) && (
+      {(error || (message && undos.length === 0)) && (
         <section className={error ? 'notice errorNotice' : 'notice successNotice'} role={error ? 'alert' : 'status'}>
           <span>{error || message}</span>
           <button type="button" className="noticeClose" aria-label="關閉提示" onClick={() => { setError(''); setMessage(''); }}>×</button>
         </section>
       )}
 
-      <section className="workspaceGrid" aria-busy={isBusy}
+      {view === 'front' ? <FrontDesk key={sessionVersion} data={data} today={today} busy={isBusy} onComplete={completeMaintenance} /> : <section className="workspaceGrid" aria-busy={isBusy}
         onCompositionStart={() => { composing.current = true; }}
         onCompositionEnd={() => { composing.current = false; }}
         onKeyDownCapture={event => { if (event.key === 'Enter' && (composing.current || event.nativeEvent.isComposing)) event.preventDefault(); }}
@@ -1000,7 +1066,15 @@ export function App() {
             </div>
           </form>
         </section>
-      </section>
+      </section>}
+      {undos.length > 0 && <aside className="undoPanel" aria-label="復原維護" aria-live="polite">
+        <p>已完成維護 · 每筆可在 15 秒內復原</p>
+        {undos.map(entry => <div className="undoRow" key={JSON.stringify([entry.lineId, entry.machineId, entry.item.id, entry.completedAt])}>
+          <span>{entry.label}</span>
+          <button type="button" className="secondaryButton compact" disabled={isBusy}
+            aria-label={`復原 ${entry.label}`} onClick={() => undoMaintenance(entry)}>復原</button>
+        </div>)}
+      </aside>}
     </main>
   );
 }
