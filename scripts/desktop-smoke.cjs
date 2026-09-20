@@ -2,11 +2,12 @@
 const { _electron: electron } = require('playwright');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const os = require('node:os');
 const assert = require('node:assert/strict');
 (async () => {
   const root = path.resolve(__dirname, '..');
-  const fixture = await fs.mkdtemp(path.join(os.tmpdir(), 'factory-ux-'));
+  const runtime = path.join(root, 'test-data', 'runtime');
+  await fs.mkdir(runtime, { recursive: true });
+  const fixture = await fs.mkdtemp(path.join(runtime, 'factory-ux-'));
   const executable = process.env.FACTORY_SMOKE_EXE;
   const app = await electron.launch({
     executablePath: executable || require('electron'),

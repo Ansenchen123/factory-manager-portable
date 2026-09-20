@@ -98,4 +98,8 @@ With Playwright installed in your development environment (or available through 
 node scripts/desktop-smoke.cjs
 ```
 
-The test creates an isolated temporary data directory and profile, exercises real Electron file persistence and native clipboard shortcuts, and writes screenshots into the temporary directory printed in its output. It does not open existing factory data. Chinese IME mode still needs a manual check with the input method used on the target computer.
+The test creates an isolated run directory under `test-data/runtime/` for its data, profile, and screenshots, exercises real Electron file persistence and native clipboard shortcuts, and prints the run directory in its output. It does not open existing factory data. Chinese IME mode still needs a manual check with the input method used on the target computer. The drag smoke test (`node scripts/drag-smoke.cjs`) uses the same runtime directory convention. See [test data conventions](test-data/README.md).
+
+## CodeGraph
+
+This project uses a local CodeGraph index for code navigation. With the CodeGraph CLI installed, run `codegraph init .` on a fresh checkout, `codegraph explore "getMaintenanceInfo"` to inspect code, and `codegraph sync` after code changes. Use `codegraph status` to check the index. Generated index databases stay local; repository-wide agent rules are in [AGENTS.md](AGENTS.md).

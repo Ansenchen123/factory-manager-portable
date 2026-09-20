@@ -1,5 +1,5 @@
 import fs from 'node:fs/promises';
-import os from 'node:os';
+import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createEmptyFactoryData } from '../shared/schema';
@@ -16,7 +16,9 @@ const { loadFactoryData, resolvePortableDataPath, saveFactoryData } = await impo
 let tempDir: string;
 
 beforeEach(async () => {
-  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'factory-data-test-'));
+  const runtime = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../test-data/runtime');
+  await fs.mkdir(runtime, { recursive: true });
+  tempDir = await fs.mkdtemp(path.join(runtime, 'factory-data-test-'));
 });
 
 afterEach(async () => {

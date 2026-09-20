@@ -3,12 +3,13 @@
 const { _electron: electron } = require('playwright');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const os = require('node:os');
 const assert = require('node:assert/strict');
 
 (async () => {
   const root = path.resolve(__dirname, '..');
-  const fixture = await fs.mkdtemp(path.join(os.tmpdir(), 'factory-drag-'));
+  const runtime = path.join(root, 'test-data', 'runtime');
+  await fs.mkdir(runtime, { recursive: true });
+  const fixture = await fs.mkdtemp(path.join(runtime, 'factory-drag-'));
   const timestamp = '2026-09-08T00:00:00.000Z';
   const dates = { createdAt: timestamp, updatedAt: timestamp };
   const machine = (id, consumables = []) => ({ id, name: id, ...dates, consumables });
