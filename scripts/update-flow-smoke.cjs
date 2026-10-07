@@ -28,7 +28,7 @@ public class UpdateSmoke { public static void Main() { File.WriteAllText(Path.Co
   const file = path.join(fixture, 'data/factory-data.json');
   const initial = JSON.stringify({ schemaVersion: 1, productionLines: [], updatedAt: new Date().toISOString() });
   await fs.writeFile(file, initial);
-  const version = '1.3.0';
+  const version = '1.3.1';
   const assetUrl = `https://github.com/Ansenchen123/factory-manager-portable/releases/download/v${version}/Factory.Manager.Portable.${version}.exe`;
   const metadata = { tag_name: `v${version}`, draft: false, prerelease: false, body: '測試更新：保留工廠存檔。', assets: [
     { name: `Factory.Manager.Portable.${version}.exe`, browser_download_url: assetUrl, size: payload.length,
@@ -83,13 +83,13 @@ require(${JSON.stringify(path.join(root, 'dist-electron/electron/main.js'))});
     await page.getByText('測試更新：保留工廠存檔。', { exact: true }).waitFor();
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
-    await page.getByRole('button', { name: /新版 1.3.0/ }).click();
+    await page.getByRole('button', { name: `新版 ${version}`, exact: true }).click();
     await page.getByRole('button', { name: /讀取預設存檔/ }).click();
-    await page.getByRole('button', { name: /新版 1.3.0/ }).click();
+    await page.getByRole('button', { name: `新版 ${version}`, exact: true }).click();
     await page.getByRole('button', { name: '後台管理', exact: true }).click();
     await page.getByLabel('產線名稱', { exact: true }).fill('尚未儲存');
     // The same update component remains mounted between front and admin.
-    if (!await page.getByRole('button', { name: '下載並更新', exact: true }).isVisible()) await page.getByRole('button', { name: /新版 1.3.0/ }).click();
+    if (!await page.getByRole('button', { name: '下載並更新', exact: true }).isVisible()) await page.getByRole('button', { name: `新版 ${version}`, exact: true }).click();
     assert(await page.getByRole('button', { name: '下載並更新', exact: true }).isDisabled());
     await page.getByLabel('產線名稱', { exact: true }).fill('');
     await page.getByRole('button', { name: '下載並更新', exact: true }).click();
