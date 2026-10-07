@@ -366,6 +366,7 @@ describe('App', () => {
     await user.type(screen.getByLabelText('產線名稱'), 'B線');
     await user.click(screen.getByRole('button', { name: '建立產線' }));
     await user.click(screen.getByRole('button', { name: '編輯 B線' }));
+    await waitFor(() => expect(screen.getByLabelText('產線名稱')).toHaveFocus());
     expect(screen.getByText('已儲存')).toBeInTheDocument();
     await user.type(screen.getByLabelText('描述'), '第二產線');
     await user.click(screen.getByRole('button', { name: '儲存產線' }));
