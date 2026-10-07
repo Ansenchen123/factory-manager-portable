@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 import type { FactoryData } from '../shared/schema';
+import type { UpdateApi } from '../shared/updates';
 
 type FactoryDataSession = {
   data: FactoryData;
@@ -8,6 +9,7 @@ type FactoryDataSession = {
 
 declare global {
   interface Window {
+    appUpdates?: UpdateApi;
     factoryData: {
       createNew: () => Promise<FactoryDataSession | null>;
       open: () => Promise<FactoryDataSession | null>;

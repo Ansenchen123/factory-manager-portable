@@ -1,5 +1,6 @@
 import { ItemTools } from './ItemTools';
 import { FrontDesk } from './FrontDesk';
+import { UpdateControl } from './UpdateControl';
 import { SelectableCard } from './SelectableCard';
 import { copyItem, moveItem, dropCard, type CardLocation, type DropPosition } from '../shared/items';
 import { CheckCircle2, Edit3, FileJson, FolderOpen, Plus, Save, Trash2, Wrench } from 'lucide-react';
@@ -112,6 +113,7 @@ function findSelectedMachine(line?: ProductionLine, selectedMachineId?: string):
 }
 
 export function App() {
+  const [installingUpdate, setInstallingUpdate] = useState(false);
   const [data, setData] = useState<FactoryData>(() => createEmptyFactoryData());
   const [dataPath, setDataPath] = useState('');
   const [view, setView] = useState<'front' | 'admin'>('front');
@@ -659,11 +661,12 @@ export function App() {
 
   if (!hasSession) {
     return (
-      <main className="startScreen">
+      <main className="startScreen" inert={installingUpdate}>
         <section className="startPanel">
           <div>
             <h1>工廠管理軟體</h1>
             <p>選擇存檔，進入維護工作台。</p>
+            <UpdateControl blocked={isBusy} onInstalling={setInstallingUpdate} />
           </div>
 
           {(error || message) && (
@@ -714,7 +717,7 @@ export function App() {
   }
 
   return (
-    <main className={`appShell ${view === 'front' ? 'frontShell' : 'adminShell'}`}>
+    <main className={`appShell ${view === 'front' ? 'frontShell' : 'adminShell'}`} inert={installingUpdate}>
       <header className="appHeader">
         <div>
           <h1>{view === 'front' ? '維護工作台' : '後台管理'}</h1>
@@ -738,6 +741,7 @@ export function App() {
           <span title={dataPath}>{dataPath}</span>
         </div>
         <div className="systemActions">
+          <UpdateControl blocked={hasDraft || isBusy} onInstalling={setInstallingUpdate} />
           <button
             className="secondaryButton compact"
             disabled={isBusy}

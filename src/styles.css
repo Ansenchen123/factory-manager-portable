@@ -676,6 +676,17 @@ button { touch-action: manipulation; }
 .adminShell .maintenanceMeta { flex: 0 0 100%; gap: 6px; margin: 2px 0; }
 .adminShell .maintenanceMeta div { padding: 6px; }
 .adminShell .consumableItem > .itemTools { margin-top: 0; }
+.updateControl { position: relative; display: inline-block; }
+.startPanel .updateControl { margin-top: 12px; }
+.updatePopover { position: absolute; z-index: 30; top: calc(100% + 8px); right: 0; width: min(420px, calc(100vw - 48px)); padding: 16px; background: white; border: 1px solid #cfd6dd; border-radius: 8px; box-shadow: 0 8px 24px #17202622; color: #172026; }
+.startPanel .updatePopover { left: 0; right: auto; }
+.updatePopover p { margin: 8px 0; font-size: 13px; line-height: 1.5; }
+.releaseNotes { max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 13px; line-height: 1.6; }
+.systemBar .updateControl, .systemBar .updatePopover, .systemBar .updatePopover .formActions { display: block; }
+.systemBar .updatePopover .formActions { display: flex; }
+@media (max-width: 639px) {
+  .updateControl .updatePopover { position: fixed; left: 12px; right: 12px; top: 80px; width: auto; max-height: calc(100vh - 100px); overflow: auto; }
+}
 @media (max-width: 1199px) {
   .workspaceGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .widePanel { grid-column: 1 / -1; }

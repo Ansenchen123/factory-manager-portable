@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, type OpenDialogOptions, type SaveDialogOptions } from 'electron';
 import path from 'node:path';
+import { setupUpdater } from './updater';
 import {
   createFactoryDataSession,
   getFactoryDataPath,
@@ -10,6 +11,10 @@ import {
 const isDev = !app.isPackaged;
 let mainWindow: BrowserWindow | undefined;
 let activeDataPath = '';
+const updater = setupUpdater(() => mainWindow);
+const hasInstanceLock = !(app.isPackaged && process.env.PORTABLE_EXECUTABLE_FILE) || app.requestSingleInstanceLock();
+if (!hasInstanceLock) app.quit();
+app.on('second-instance', () => { mainWindow?.restore(); mainWindow?.focus(); });
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -59,6 +64,7 @@ function createWindow(): void {
     }
   });
   mainWindow.webContents.on('will-prevent-unload', event => {
+    if (updater.installing()) { updater.cancelInstall(); return; }
     const parent = getDialogParent();
     if (!parent) return;
     const choice = dialog.showMessageBoxSync(parent, {
@@ -148,7 +154,9 @@ ipcMain.handle('factory-data:save', async (_event, data) => {
 ipcMain.handle('factory-data:get-path', () => activeDataPath || getFactoryDataPath());
 
 void app.whenReady().then(() => {
+  if (!hasInstanceLock) { app.quit(); return; }
   createWindow();
+  if (app.isPackaged) void updater.check();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

@@ -8,6 +8,7 @@ Factory Manager Portable is an Electron desktop app for managing factory product
 
 ## Features
 
+- Windows x64 single-file portable builds check this repository's latest stable GitHub Release at startup. The update panel shows the new version and release notes; **下載並更新** downloads, verifies SHA-256, closes the application, replaces the original EXE, and restarts it. Save or cancel any drafts before updating.
 - Choose a save file, then enter the maintenance front desk by default. Use **後台管理** to access the existing production-line, machine, and consumable editor, and **返回前台** to return.
 - See overdue items and items due today in separate lists, each showing its production line and machine.
 - Compact desktop layout places the two lists side by side. Six typical items (three per list) fit at 1280×720 or 1024×768 without scrolling; narrow windows stack the lists, and larger datasets remain scrollable without clipping content.
@@ -113,3 +114,16 @@ Run `node scripts/admin-layout-smoke.cjs` to verify that an empty administration
 ## CodeGraph
 
 This project uses a local CodeGraph index for code navigation. With the CodeGraph CLI installed, run `codegraph init .` on a fresh checkout, `codegraph explore "getMaintenanceInfo"` to inspect code, and `codegraph sync` after code changes. Use `codegraph status` to check the index. Generated index databases stay local; repository-wide agent rules are in [AGENTS.md](AGENTS.md).
+
+## Portable updates
+
+- Install this updater-enabled build once by replacing the previous EXE. Future stable releases appear automatically at startup; the version button also provides **檢查更新**.
+- Updates keep the original EXE filename and directory. Factory JSON files, including `data/factory-data.json` and files selected elsewhere, stay in place. The restarted app opens the save-selection screen.
+- The original EXE directory must be writable. Downloads and the previous executable are kept in a sibling `.factory-update-*` folder. A failed launch restores the previous executable; `result.json` inside that folder records the outcome. After confirming the new version works, that update folder can be removed.
+- ZIP/folder builds and other platforms provide a link to the official download page. Automatic EXE replacement is for Windows x64 single-file portable builds.
+- Publish a stable `vX.Y.Z` GitHub Release with the portable asset named `Factory.Manager.Portable.X.Y.Z.exe` (GitHub normalizes spaces in the packaged filename to dots). The GitHub API asset must be `uploaded` and include its SHA-256 `digest`. Draft and prerelease releases are skipped; equal or older versions are never downloaded. A stable version supersedes its matching `-test` build.
+- Build locally with `npm run package:win -- --publish never`. Publishing remains a separate explicitly requested action.
+
+Validation: `npm test`, `node scripts/update-helper-smoke.cjs`, and `node scripts/update-flow-smoke.cjs` (after `npm run build`, with Playwright available). Set `FACTORY_SMOKE_EXE` to the packaged `win-unpacked` executable to run the flow against its ASAR contents. The Windows helper test checks real EXE replacement, restart, rollback, cancelled exit, and Chinese paths with spaces/apostrophes. The full flow test simulates GitHub responses while exercising the actual Electron main process, preload, UI, download verification, and helper. All fixtures stay in `test-data/runtime/`.
+
+Source contracts: [GitHub release assets and digests](https://docs.github.com/en/rest/releases/assets), [Electron quit lifecycle](https://www.electronjs.org/docs/latest/api/app), and the installed electron-builder `templates/nsis/portable.nsi` (`PORTABLE_EXECUTABLE_FILE` identifies the original launcher).
