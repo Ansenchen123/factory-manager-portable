@@ -765,6 +765,7 @@ export function App() {
       {view === 'front' ? <FrontDesk key={sessionVersion} data={data} today={today} busy={isBusy} onComplete={completeMaintenance} /> : <section className="workspaceGrid" aria-busy={isBusy}
         onCompositionStart={() => { composing.current = true; }}
         onCompositionEnd={() => { composing.current = false; }}
+        onBlurCapture={() => { composing.current = false; }}
         onKeyDownCapture={event => { if (event.key === 'Enter' && (composing.current || event.nativeEvent.isComposing)) event.preventDefault(); }}
         onClickCapture={event => { if (saving.current && (event.target as HTMLElement).closest('button')) { event.preventDefault(); event.stopPropagation(); } }}>
 

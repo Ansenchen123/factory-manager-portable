@@ -260,6 +260,22 @@ describe('App', () => {
     expect(copy.consumables[0].lastMaintainedAt).toBeUndefined();
   });
 
+  it('adds a machine to a copied production line', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await openDefaultSave(user);
+    await user.click(screen.getByRole('button', { name: '複製 A線' }));
+    await user.click(screen.getByRole('button', { name: '貼上產線' }));
+    await user.click(await screen.findByText('A線（副本）', { selector: 'strong' }));
+    await user.type(screen.getByLabelText('機台名稱'), '副本新增機台');
+    await user.click(screen.getByRole('button', { name: '建立機台' }));
+
+    await waitFor(() => {
+      const copiedLine = saveMock.mock.lastCall![0].productionLines.find(line => line.name === 'A線（副本）');
+      expect(copiedLine?.machines.some(machine => machine.name === '副本新增機台')).toBe(true);
+    });
+  });
+
   it('persists ordering while keeping the current selection', async () => {
     const user = userEvent.setup();
     render(<App />);
@@ -322,6 +338,19 @@ describe('App', () => {
     fireEvent.compositionEnd(input);
     await user.click(screen.getByRole('button', { name: '建立產線' }));
     expect(saveMock).toHaveBeenCalledOnce();
+  });
+
+  it('allows saving after an IME field loses focus without compositionend', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await openDefaultSave(user);
+    const input = screen.getByLabelText('產線名稱');
+    fireEvent.compositionStart(input);
+    fireEvent.change(input, { target: { value: '副本後新增產線' } });
+    fireEvent.blur(input);
+    await user.click(screen.getByRole('button', { name: '建立產線' }));
+
+    await waitFor(() => expect(saveMock).toHaveBeenCalledOnce());
   });
 
   it('preserves new typing during a slow save and blocks concurrent saves', async () => {
