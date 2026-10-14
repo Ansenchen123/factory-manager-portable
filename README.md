@@ -77,6 +77,7 @@ The default runtime data path is `data/factory-data.json`. In development it is 
 - `shared/` - shared Zod schemas, TypeScript data types, and maintenance reminder logic.
 - `src/` - React user interface and styling.
 - `tests/` - Vitest unit and component tests.
+- `docs/state-machine.md` - complete application state machine, guards, invariants, and operation matrix.
 - `index.html` - Vite HTML entry point.
 - `package.json` - npm scripts, dependencies, and electron-builder configuration.
 - `package-lock.json` - locked npm dependency tree.
