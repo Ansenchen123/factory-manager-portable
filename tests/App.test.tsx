@@ -44,9 +44,12 @@ async function openDefaultSave(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: '後台管理' }));
   await screen.findByText('A線', { selector: 'strong' });
   // "New" forms start collapsed; these tests exercise them, so expand all three.
-  for (const name of ['新增產線', '新增機台', '新增耗材']) {
+  for (const [name, label] of [['新增產線', '產線名稱'], ['新增機台', '機台名稱'], ['新增耗材', '耗材名稱']]) {
     const toggle = screen.queryByRole('button', { name });
-    if (toggle) await user.click(toggle);
+    if (toggle) {
+      await user.click(toggle);
+      await waitFor(() => expect(screen.getByLabelText(label)).toHaveFocus());
+    }
   }
 }
 
