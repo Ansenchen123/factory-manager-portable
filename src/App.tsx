@@ -264,15 +264,22 @@ export function App() {
 
   function paste(kind: 'line' | 'machine' | 'consumable') {
     if (!clipboard || clipboard.kind !== kind || (kind === 'machine' && !selectedLine) || (kind === 'consumable' && !selectedMachine)) return;
+    let pastedId: string | undefined;
+    let pastedMachineId: string | undefined;
     updateData((current, timestamp) => {
       const item = copyItem(clipboard.item, timestamp, newId);
       item.name += '（副本）';
+      pastedId = item.id;
+      if (kind === 'line') pastedMachineId = (item as ProductionLine).machines[0]?.id;
       return { ...current, updatedAt: timestamp,
         productionLines: kind === 'line' ? [...current.productionLines, item as ProductionLine] : current.productionLines.map(line =>
           line.id !== selectedLine?.id ? line : { ...line, updatedAt: timestamp,
             machines: kind === 'machine' ? [...line.machines, item as Machine] : line.machines.map(machine =>
               machine.id !== selectedMachine?.id ? machine : { ...machine, updatedAt: timestamp, consumables: [...machine.consumables, item as Consumable] }) }) };
-    }, '副本已建立。維護日期請依實際情況設定。');
+    }, '副本已建立。維護日期請依實際情況設定。', () => {
+      if (kind === 'line' && !selectedLineId) { setSelectedLineId(pastedId); setSelectedMachineId(pastedMachineId); }
+      if (kind === 'machine' && !selectedMachineId) setSelectedMachineId(pastedId);
+    });
   }
 
   function itemTools(kind: 'line' | 'machine' | 'consumable', item: ProductionLine | Machine | Consumable, index: number, count: number,

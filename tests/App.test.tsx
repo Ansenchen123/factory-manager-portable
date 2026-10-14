@@ -268,6 +268,42 @@ describe('App', () => {
     expect(copy.consumables[0].lastMaintainedAt).toBeUndefined();
   });
 
+  it('writes the machine selection when pasting the first machine into an empty line', async () => {
+    const user = await openBoard();
+    await user.click(screen.getByRole('button', { name: '複製 CNC-01' }));
+    await user.click(screen.getByText('B線', { selector: 'strong' }));
+    await user.click(screen.getByRole('button', { name: '貼上機台' }));
+    await screen.findByText('CNC-01（副本）', { selector: 'strong' });
+    await user.click(screen.getByRole('button', { name: '複製 CNC-01（副本）' }));
+    await user.click(screen.getByRole('button', { name: '貼上機台' }));
+    await screen.findByText('CNC-01（副本）（副本）', { selector: 'strong' });
+    await user.click(screen.getByText('CNC-01（副本）', { selector: 'strong' }));
+    await user.click(screen.getByRole('button', { name: '下移 CNC-01（副本）' }));
+
+    await waitFor(() => expect(card('CNC-01（副本）')).toHaveClass('selected'));
+    expect(card('CNC-01（副本）（副本）')).not.toHaveClass('selected');
+  });
+
+  it('writes the line selection when pasting the first line', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await openDefaultSave(user);
+    await user.click(screen.getByRole('button', { name: '複製 A線' }));
+    await user.click(screen.getByRole('button', { name: '刪除 A線' }));
+    await waitFor(() => expect(screen.queryByText('A線', { selector: 'strong' })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: '貼上產線' })).toBeEnabled());
+    await user.click(screen.getByRole('button', { name: '貼上產線' }));
+    await screen.findByText('A線（副本）', { selector: 'strong' });
+    await user.click(screen.getByRole('button', { name: '複製 A線（副本）' }));
+    await user.click(screen.getByRole('button', { name: '貼上產線' }));
+    await screen.findByText('A線（副本）（副本）', { selector: 'strong' });
+    await user.click(screen.getByText('A線（副本）', { selector: 'strong' }));
+    await user.click(screen.getByRole('button', { name: '下移 A線（副本）' }));
+
+    await waitFor(() => expect(card('A線（副本）')).toHaveClass('selected'));
+    expect(card('A線（副本）（副本）')).not.toHaveClass('selected');
+  });
+
   it('adds a machine to a copied production line', async () => {
     const user = userEvent.setup();
     render(<App />);
