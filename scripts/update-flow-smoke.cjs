@@ -28,7 +28,7 @@ public class UpdateSmoke { public static void Main() { File.WriteAllText(Path.Co
   const file = path.join(fixture, 'data/factory-data.json');
   const initial = JSON.stringify({ schemaVersion: 1, productionLines: [], updatedAt: new Date().toISOString() });
   await fs.writeFile(file, initial);
-  const version = '1.3.1';
+  const version = '99.0.0';
   const assetUrl = `https://github.com/Ansenchen123/factory-manager-portable/releases/download/v${version}/Factory.Manager.Portable.${version}.exe`;
   const metadata = { tag_name: `v${version}`, draft: false, prerelease: false, body: '測試更新：保留工廠存檔。', assets: [
     { name: `Factory.Manager.Portable.${version}.exe`, browser_download_url: assetUrl, size: payload.length,

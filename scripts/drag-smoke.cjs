@@ -35,7 +35,7 @@ const assert = require('node:assert/strict');
     await page.getByRole('button', { name: /讀取預設存檔/ }).click();
     await page.getByRole('button', { name: '後台管理', exact: true }).click();
     await card('A線').waitFor();
-    const row = card('B線').locator('.itemActions');
+    const row = card('B線').locator('.itemTools');
     const box = await row.boundingBox();
     await row.click({ position: { x: box.width - 4, y: box.height / 2 } });
     await selected('B線');

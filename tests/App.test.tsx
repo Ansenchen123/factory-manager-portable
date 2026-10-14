@@ -432,7 +432,7 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: '貼上產線' })).not.toBeInTheDocument();
     expect(screen.getByTitle(dataPath)).toHaveTextContent(/^factory-data\.json$/);
     await user.click(screen.getByRole('button', { name: '新增產線' }));
-    expect(screen.getByLabelText('產線名稱')).toHaveFocus();
+    await waitFor(() => expect(screen.getByLabelText('產線名稱')).toHaveFocus());
     await user.click(screen.getByRole('button', { name: '取消' }));
     expect(screen.queryByLabelText('產線名稱')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '複製 A線' }));
