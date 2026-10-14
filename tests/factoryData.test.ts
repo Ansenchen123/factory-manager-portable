@@ -117,7 +117,26 @@ describe('save file safety', () => {
     const first = await saveFactoryData(createEmptyFactoryData(), filePath);
     const other = await saveFactoryData({ ...first, productionLines: [] }, filePath, first.updatedAt);
     await expect(saveFactoryData(first, filePath, first.updatedAt)).rejects.toThrow('FACTORY_FILE_CHANGED');
+    await expect(saveFactoryData(first, filePath, first.updatedAt)).rejects.toThrow('FACTORY_FILE_CHANGED');
     expect(JSON.parse(await fs.readFile(filePath, 'utf8')).updatedAt).toBe(other.updatedAt);
+  });
+
+  it('treats corrupt on-disk content as an external change during save', async () => {
+    const filePath = path.join(tempDir, 'factory.json');
+    const first = await saveFactoryData(createEmptyFactoryData(), filePath);
+    await fs.writeFile(filePath, '{ broken', 'utf8');
+
+    await expect(saveFactoryData(first, filePath, first.updatedAt)).rejects.toThrow('FACTORY_FILE_CHANGED');
+    expect(await fs.readFile(filePath, 'utf8')).toBe('{ broken');
+  });
+
+  it('recreates a save file that was deleted after it was read', async () => {
+    const filePath = path.join(tempDir, 'factory.json');
+    const first = await saveFactoryData(createEmptyFactoryData(), filePath);
+    await fs.rm(filePath);
+
+    const recreated = await saveFactoryData(first, filePath, first.updatedAt);
+    expect(await loadFactoryData(filePath)).toEqual(recreated);
   });
 
   it('restores the last good save and keeps the corrupt file', async () => {

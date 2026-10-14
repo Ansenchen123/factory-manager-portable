@@ -118,6 +118,18 @@ describe('App', () => {
     expect(screen.getByLabelText('機台名稱')).toHaveValue('草稿');
   });
 
+  it('replaces the single clipboard when copying a different item kind', async () => {
+    const user = await openBoard();
+    await user.click(screen.getByRole('button', { name: '複製 B線' }));
+    expect(screen.getByRole('button', { name: '貼上產線' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '複製 CNC-01' }));
+    expect(screen.queryByRole('button', { name: '貼上產線' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '貼上機台' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '複製 濾芯' }));
+    expect(screen.queryByRole('button', { name: '貼上機台' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '貼上耗材' })).toBeInTheDocument();
+  });
+
   it('persists line and machine drag ordering while retaining selection', async () => {
     await openBoard();
     drag(card('A線'), card('B線'));
@@ -430,6 +442,19 @@ describe('App', () => {
     await user.click(screen.getByText('B線', { selector: 'strong' }));
     expect(screen.getByLabelText('機台名稱')).toHaveValue('未完成機台');
     expect(screen.getByText('CNC-01')).toBeInTheDocument();
+  });
+
+  it('keeps the active session when opening another save fails', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await openDefaultSave(user);
+    vi.mocked(window.factoryData.open).mockRejectedValueOnce(new Error('disk unavailable'));
+    await user.click(screen.getByRole('button', { name: '開啟其他存檔' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('無法開啟存檔');
+    expect(screen.getByRole('heading', { name: '後台管理' })).toBeInTheDocument();
+    expect(screen.getByText('A線', { selector: 'strong' })).toBeInTheDocument();
+    expect(screen.getByTitle(dataPath)).toHaveTextContent('factory-data.json');
   });
 
   it('keeps editing on the second line after save and reports clean state', async () => {

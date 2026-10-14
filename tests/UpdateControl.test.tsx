@@ -62,6 +62,24 @@ it('leaves the app running after a download error and can retry checking', async
   await user.click(screen.getByRole('button', { name: '檢查更新' }));
   expect(api.check).toHaveBeenCalledTimes(1);
 });
+it('can retry downloading directly after a download error', async () => {
+  vi.mocked(api.download)
+    .mockImplementationOnce(async () => {
+      const failed: UpdateState = { ...available, status: 'error', message: '更新檔案驗證失敗' };
+      listener(failed); return failed;
+    })
+    .mockImplementationOnce(async () => {
+      const ready: UpdateState = { ...available, status: 'ready' };
+      listener(ready); return ready;
+    });
+  const user = userEvent.setup();
+  render(<UpdateControl blocked={false} onInstalling={onInstalling} />);
+  await user.click(await screen.findByRole('button', { name: '下載並更新' }));
+  await user.click(screen.getByRole('button', { name: '下載並更新' }));
+
+  expect(api.download).toHaveBeenCalledTimes(2);
+  expect(api.install).toHaveBeenCalledTimes(1);
+});
 it('unlocks the interface if the main process cancels restart', async () => {
   render(<UpdateControl blocked={false} onInstalling={onInstalling} />);
   await screen.findByText('維護工作台更新');
