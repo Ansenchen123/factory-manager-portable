@@ -442,6 +442,36 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: '貼上產線' })).toBeEnabled();
   });
 
+  it('keeps the remaining machine selected after deleting the selected machine', async () => {
+    const user = await openBoard();
+    await user.click(screen.getByRole('button', { name: '刪除 CNC-01' }));
+    await waitFor(() => expect(screen.queryByText('CNC-01', { selector: 'strong' })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: '複製 CNC-02' })).toBeEnabled());
+    await user.click(screen.getByRole('button', { name: '複製 CNC-02' }));
+    await user.click(screen.getByRole('button', { name: '貼上機台' }));
+    await screen.findByText('CNC-02（副本）', { selector: 'strong' });
+    await user.click(screen.getByText('CNC-02', { selector: 'strong' }));
+    await user.click(screen.getByRole('button', { name: '下移 CNC-02' }));
+
+    await waitFor(() => expect(card('CNC-02')).toHaveClass('selected'));
+    expect(card('CNC-02（副本）')).not.toHaveClass('selected');
+  });
+
+  it('keeps the remaining line selected after deleting the selected line', async () => {
+    const user = await openBoard();
+    await user.click(screen.getByRole('button', { name: '刪除 A線' }));
+    await waitFor(() => expect(screen.queryByText('A線', { selector: 'strong' })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: '複製 B線' })).toBeEnabled());
+    await user.click(screen.getByRole('button', { name: '複製 B線' }));
+    await user.click(screen.getByRole('button', { name: '貼上產線' }));
+    await screen.findByText('B線（副本）', { selector: 'strong' });
+    await user.click(screen.getByText('B線', { selector: 'strong' }));
+    await user.click(screen.getByRole('button', { name: '下移 B線' }));
+
+    await waitFor(() => expect(card('B線')).toHaveClass('selected'));
+    expect(card('B線（副本）')).not.toHaveClass('selected');
+  });
+
   it('explains when the save file was changed elsewhere', async () => {
     const user = userEvent.setup();
     render(<App />);

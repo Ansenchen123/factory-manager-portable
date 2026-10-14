@@ -548,17 +548,19 @@ export function App() {
     if (!window.confirm('刪除此產線會一併刪除底下機台與耗材，確定嗎？')) {
       return;
     }
+    const nextLine = data.productionLines.find(line => line.id !== lineId);
 
     updateData((current, timestamp) => {
       const productionLines = current.productionLines.filter((line) => line.id !== lineId);
       return { ...current, productionLines, updatedAt: timestamp };
-    }, '產線已刪除。', () => { if (lineForm.id === lineId) setLineForm(emptyLineForm); if (selectedLine?.id === lineId) { setMachineForm(emptyMachineForm); setConsumableForm(emptyConsumableForm); } });
+    }, '產線已刪除。', () => { if (lineForm.id === lineId) setLineForm(emptyLineForm); if (selectedLine?.id === lineId) { setSelectedLineId(nextLine?.id); setSelectedMachineId(nextLine?.machines[0]?.id); setMachineForm(emptyMachineForm); setConsumableForm(emptyConsumableForm); } });
   }
 
   function deleteMachine(machineId: string) {
     if (!selectedLine || !window.confirm('刪除此機台會一併刪除底下耗材，確定嗎？')) {
       return;
     }
+    const nextMachine = selectedLine.machines.find(machine => machine.id !== machineId);
 
     updateData((current, timestamp) => ({
       ...current,
@@ -571,7 +573,7 @@ export function App() {
         return { ...line, machines, updatedAt: timestamp };
       }),
       updatedAt: timestamp,
-    }), '機台已刪除。', () => { if (machineForm.id === machineId) setMachineForm(emptyMachineForm); if (selectedMachine?.id === machineId) setConsumableForm(emptyConsumableForm); });
+    }), '機台已刪除。', () => { if (machineForm.id === machineId) setMachineForm(emptyMachineForm); if (selectedMachine?.id === machineId) { setSelectedMachineId(nextMachine?.id); setConsumableForm(emptyConsumableForm); } });
   }
 
   function deleteConsumable(consumableId: string) {
