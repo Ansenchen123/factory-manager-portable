@@ -22,6 +22,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  vi.useRealTimers();
   await fs.rm(tempDir, { force: true, recursive: true });
 });
 
@@ -113,8 +114,11 @@ describe('factory data persistence', () => {
 
 describe('save file safety', () => {
   it('refuses to overwrite a file another program saved since it was read', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-14T00:00:00.000Z'));
     const filePath = path.join(tempDir, 'factory.json');
     const first = await saveFactoryData(createEmptyFactoryData(), filePath);
+    vi.setSystemTime(new Date('2026-10-14T00:00:01.000Z'));
     const other = await saveFactoryData({ ...first, productionLines: [] }, filePath, first.updatedAt);
     await expect(saveFactoryData(first, filePath, first.updatedAt)).rejects.toThrow('FACTORY_FILE_CHANGED');
     await expect(saveFactoryData(first, filePath, first.updatedAt)).rejects.toThrow('FACTORY_FILE_CHANGED');
