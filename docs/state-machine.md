@@ -589,16 +589,18 @@ stateDiagram-v2
 | 拖曳、跨產線移轉、刪除後選取 | `tests/items.test.ts`、`tests/dragPreview.test.ts`、`scripts/drag-smoke.cjs` | 已覆蓋 |
 | 更新選版、下載、錯誤後直接重試、非 portable 分支、UI、helper 替換與回滾 | `tests/updates.test.ts`、`tests/UpdateControl.test.tsx`、`scripts/update-helper-smoke.cjs`、`scripts/update-flow-smoke.cjs` | 已覆蓋主要流程；啟動清理未覆蓋 |
 | 完整桌面資料流程與版面 | `scripts/desktop-smoke.cjs`、`scripts/admin-layout-smoke.cjs` | 已覆蓋 |
-| Electron 程式生命週期與啟動清理 | 無 | 未覆蓋下列四項 |
+| Electron 程式生命週期與啟動清理 | `scripts/lifecycle-smoke.cjs` | 封裝主程序：第二實例退出／通知、導覽事件守衛、拒絕 window.open、四種 stage 清理與失敗提示；原生互動按驗收程序另驗 |
 
 ### 已知自動測試缺口
 
-- [ ] 單一實例鎖：第二實例必須聚焦主視窗並自行退出。
-- [ ] 導覽防護：拖入檔案或連結觸發 `will-navigate` 時必須阻止頁面離開，`window.open` 必須被拒絕。
+- [x] 單一實例鎖的第二程序退出與通知：`scripts/lifecycle-smoke.cjs`；原生聚焦結果仍依 A14 驗證。
+- [x] 導覽事件守衛及實際 `window.open` 拒絕：`scripts/lifecycle-smoke.cjs`；原生檔案拖入仍依 A14 驗證。
 - [ ] 損毀存檔協調：`main.ts` 的 `loadWithRecovery` 必須顯示還原對話框、依使用者選擇還原或取消，並更新作用中工作階段。
-- [ ] 更新啟動清理：完成的 stage 必須刪除；失敗的 stage 必須送出一次提示並依 `previous.exe` 狀態保留或清理。
+- [x] 更新啟動清理：`scripts/lifecycle-smoke.cjs` 驗證無 previous、同版本 installed、不同版本 installed、error 且有 previous 的結果與提示。
 
-`tests/factoryData.test.ts` 只驗證備份讀取與 `restoreFactoryDataBackup` 函式，不驗證 Electron 對話框、取消分支或 `useSession` 協調。以上四項在補上測試前不得標記為已自動驗證。
+`tests/factoryData.test.ts` 只驗證備份讀取與 `restoreFactoryDataBackup` 函式，不驗證 Electron 對話框、取消分支或 `useSession` 協調。原生對話框焦點、IME 與真實檔案拖入必須另外留下 computer-use 證據。
+
+2026-10-14 原生驗收在 Electron 41.3.0 重現刪除確認後字元被丟棄，與 [上游 #54380](https://github.com/electron/electron/pull/54380) 的焦點問題一致。依 [43 分支修正 #54462](https://github.com/electron/electron/pull/54462) 升級並鎖定 43.7.11 後，已驗證刪除後第一下點擊、第一個英文字元與重新建立機台。完整原生驗收結論以每輪 report.md 為準。
 
 ## 15. 修改狀態機的完成條件
 
