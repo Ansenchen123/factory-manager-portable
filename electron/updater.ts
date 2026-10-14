@@ -36,6 +36,24 @@ export function setupUpdater(getWindow: () => BrowserWindow | undefined) {
   ipcMain.handle('app-update:state', () => state);
   ipcMain.handle('app-update:check', check);
   ipcMain.handle('app-update:open', () => shell.openExternal(releasePage));
+  // Runs at startup, before any new stage exists. A folder is kept only while it still holds
+  // a previous executable that this version has not proven replaceable (installed and running).
+  async function cleanup() {
+    if (!target) return;
+    const directory = path.dirname(target);
+    const entries = await fs.readdir(directory, { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+      if (!entry.isDirectory() || !entry.name.startsWith('.factory-update-')) continue;
+      const folder = path.join(directory, entry.name);
+      const result = await fs.readFile(path.join(folder, 'result.json'), 'utf8')
+        .then(text => JSON.parse(text.replace(/^﻿/, '')) as { status?: string; version?: string }, () => undefined);
+      const hasPrevious = await fs.stat(path.join(folder, 'previous.exe')).then(() => true, () => false);
+      if (result?.status === 'error') send({ notice: '上次更新未完成，已保留原本的版本。可再次下載更新。' });
+      if (!hasPrevious || (result?.status === 'installed' && result.version === app.getVersion())) {
+        await fs.rm(folder, { recursive: true, force: true }).catch(() => undefined);
+      }
+    }
+  }
   ipcMain.handle('app-update:download', async () => {
     if (active() || state.status === 'ready' || !state.release || !target) return state;
     const release = state.release;
@@ -47,6 +65,9 @@ export function setupUpdater(getWindow: () => BrowserWindow | undefined) {
       });
       return send({ status: 'ready' });
     } catch (error) {
+      // A failed download leaves nothing worth keeping; retries create a fresh folder.
+      if (stage) await fs.rm(stage, { recursive: true, force: true }).catch(() => undefined);
+      stage = undefined;
       return send({ status: 'error', message: error instanceof Error ? error.message : '下載失敗，請重試。' });
     }
   });
@@ -86,6 +107,7 @@ export function setupUpdater(getWindow: () => BrowserWindow | undefined) {
   });
   return {
     check,
+    cleanup,
     installing: () => state.status === 'installing',
     cancelInstall: () => {
       helper?.kill(); helper = undefined;

@@ -71,7 +71,7 @@ const assert = require('node:assert/strict');
     await button('上移 組裝二線').waitFor();
     assert.equal(await page.locator('.consumableTitle strong').first().textContent(), '冷卻濾芯（副本）');
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.locator('.consumableItem').filter({ hasText: 'FILTER-01' }).first().getByRole('button', { name: '編輯', exact: true }).click();
+    await page.locator('.consumableItem').filter({ hasText: 'FILTER-01' }).first().getByRole('button', { name: /^編輯 / }).click();
     await label('備註').fill('定期檢查密封圈');
     await label('備註').focus();
     const beforeSaveScroll = await page.evaluate(() => scrollY);

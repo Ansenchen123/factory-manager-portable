@@ -11,7 +11,7 @@ vi.mock('electron', () => ({
   },
 }));
 
-const { loadFactoryData, resolvePortableDataPath, saveFactoryData } = await import('../electron/factoryData');
+const { createFactoryDataSession, loadFactoryData, resolvePortableDataPath, restoreFactoryDataBackup, saveFactoryData, suggestNewFactoryDataPath } = await import('../electron/factoryData');
 
 let tempDir: string;
 
@@ -108,5 +108,37 @@ describe('factory data persistence', () => {
 
     expect(saved.productionLines).toHaveLength(1);
     expect(backup.productionLines).toHaveLength(0);
+  });
+});
+
+describe('save file safety', () => {
+  it('refuses to overwrite a file another program saved since it was read', async () => {
+    const filePath = path.join(tempDir, 'factory.json');
+    const first = await saveFactoryData(createEmptyFactoryData(), filePath);
+    const other = await saveFactoryData({ ...first, productionLines: [] }, filePath, first.updatedAt);
+    await expect(saveFactoryData(first, filePath, first.updatedAt)).rejects.toThrow('FACTORY_FILE_CHANGED');
+    expect(JSON.parse(await fs.readFile(filePath, 'utf8')).updatedAt).toBe(other.updatedAt);
+  });
+
+  it('restores the last good save and keeps the corrupt file', async () => {
+    const filePath = path.join(tempDir, 'factory.json');
+    const good = await saveFactoryData(createEmptyFactoryData(), filePath);
+    await saveFactoryData(good, filePath);
+    await fs.writeFile(filePath, '{ broken', 'utf8');
+    await expect(loadFactoryData(filePath)).rejects.toThrow();
+    const restored = await restoreFactoryDataBackup(filePath);
+    expect(restored.data.schemaVersion).toBe(1);
+    expect(await loadFactoryData(filePath)).toEqual(restored.data);
+    expect((await fs.readdir(tempDir)).some(name => name.startsWith('factory.json.corrupt-'))).toBe(true);
+  });
+
+  it('suggests an unused file name and keeps a dated copy of a replaced file', async () => {
+    const now = new Date(2026, 9, 14);
+    const suggested = await suggestNewFactoryDataPath(tempDir, now);
+    expect(path.basename(suggested)).toBe('工廠存檔-20261014.json');
+    await saveFactoryData(createEmptyFactoryData(), suggested);
+    expect(path.basename(await suggestNewFactoryDataPath(tempDir, now))).toBe('工廠存檔-20261014-2.json');
+    await createFactoryDataSession(suggested);
+    expect((await fs.readdir(tempDir)).some(name => name.includes('.replaced-'))).toBe(true);
   });
 });

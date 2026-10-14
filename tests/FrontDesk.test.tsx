@@ -16,7 +16,7 @@ function fixture(): FactoryData {
   return { schemaVersion: 1, updatedAt: now.toISOString(), productionLines: [
     { id: 'a', name: '加工線', createdAt: now.toISOString(), updatedAt: now.toISOString(), machines: [
       { id: 'a1', name: '研磨機', code: 'GR-01', createdAt: now.toISOString(), updatedAt: now.toISOString(),
-        consumables: [item('濾芯', -2), item('皮帶', 0)] },
+        consumables: [item('濾芯', -2), item('皮帶', 0), item('油封', 5)] },
     ] },
     { id: 'b', name: '包裝線', createdAt: now.toISOString(), updatedAt: now.toISOString(), machines: [
       { id: 'b1', name: '封口機', code: 'PK-02', createdAt: now.toISOString(), updatedAt: now.toISOString(),
@@ -134,6 +134,7 @@ describe('front desk maintenance', () => {
   it('keeps the full admin workspace behind a switch and protects unsaved drafts', async () => {
     const user = await open();
     await user.click(screen.getByRole('button', { name: '後台管理' }));
+    await user.click(screen.getByRole('button', { name: '新增產線' }));
     await user.type(screen.getByLabelText('產線名稱'), '未存草稿');
     vi.mocked(window.confirm).mockReturnValueOnce(false);
     await user.click(screen.getByRole('button', { name: '返回前台' }));
@@ -185,5 +186,16 @@ describe('front desk maintenance', () => {
     act(() => { vi.advanceTimersByTime(60_000); });
     expect(within(screen.getByRole('region', { name: /已逾期/ })).getByText('皮帶')).toBeInTheDocument();
     expect(within(screen.getByRole('region', { name: /今天需要維護/ })).queryByText('皮帶')).not.toBeInTheDocument();
+  });
+
+  it('shows the next seven days and names each machine once', async () => {
+    const user = await open();
+    const upcoming = screen.getByRole('region', { name: /即將到期/ });
+    expect(within(upcoming).getByText('油封')).toBeInTheDocument();
+    expect(within(upcoming).getByText('5 天後')).toBeInTheDocument();
+    expect(within(upcoming).queryByText('加熱片')).not.toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: /今天需要維護/ })).getByText('今天到期')).toHaveClass('statusSoon');
+    await user.type(screen.getByRole('searchbox'), '研磨機');
+    expect(screen.getAllByText('產線：加工線 → 機台：研磨機')).toHaveLength(1);
   });
 });

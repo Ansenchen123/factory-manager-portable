@@ -3,16 +3,23 @@ import path from 'node:path';
 import { setupUpdater } from './updater';
 import {
   createFactoryDataSession,
+  type FactoryDataSession,
   getFactoryDataPath,
   loadFactoryDataSession,
+  readFactoryDataBackup,
+  restoreFactoryDataBackup,
   saveFactoryData,
+  suggestNewFactoryDataPath,
 } from './factoryData';
 
 const isDev = !app.isPackaged;
 let mainWindow: BrowserWindow | undefined;
 let activeDataPath = '';
+// The file's updatedAt as last read or written here; a mismatch means someone else saved it.
+let activeUpdatedAt: string | undefined;
 const updater = setupUpdater(() => mainWindow);
-const hasInstanceLock = !(app.isPackaged && process.env.PORTABLE_EXECUTABLE_FILE) || app.requestSingleInstanceLock();
+// Every build writes one shared data file, so a second window would overwrite the first one's saves.
+const hasInstanceLock = app.requestSingleInstanceLock();
 if (!hasInstanceLock) app.quit();
 app.on('second-instance', () => { mainWindow?.restore(); mainWindow?.focus(); });
 
@@ -24,7 +31,7 @@ function createWindow(): void {
     minHeight: 480,
     title: '工廠管理軟體',
     icon: path.join(app.getAppPath(), 'assets', 'icon.png'),
-    backgroundColor: '#f6f7f9',
+    backgroundColor: '#f3f5f7',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -63,6 +70,9 @@ function createWindow(): void {
       Menu.buildFromTemplate([{ label: '複製', role: 'copy' }]).popup({ window: mainWindow });
     }
   });
+  // Dropping a file or link onto the window would otherwise replace the app with that document.
+  mainWindow.webContents.on('will-navigate', event => event.preventDefault());
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   mainWindow.webContents.on('will-prevent-unload', event => {
     if (updater.installing()) { updater.cancelInstall(); return; }
     const parent = getDialogParent();
@@ -100,10 +110,40 @@ function showOpenDialog(options: OpenDialogOptions) {
   return parent ? dialog.showOpenDialog(parent, options) : dialog.showOpenDialog(options);
 }
 
+function useSession(session: FactoryDataSession): FactoryDataSession {
+  activeDataPath = session.path;
+  activeUpdatedAt = session.data.updatedAt;
+  return session;
+}
+
+async function loadWithRecovery(filePath: string): Promise<FactoryDataSession> {
+  try {
+    return await loadFactoryDataSession(filePath);
+  } catch (error) {
+    // File-system errors (permissions, locks) are not corruption; only offer the backup for unreadable content.
+    if ((error as NodeJS.ErrnoException).code) throw error;
+    const backup = await readFactoryDataBackup(filePath);
+    const parent = getDialogParent();
+    if (!backup || !parent) throw error;
+    const { response } = await dialog.showMessageBox(parent, {
+      type: 'warning',
+      title: '存檔無法讀取',
+      message: '這個存檔內容損毀或格式不正確。',
+      detail: `找到上一次儲存的備份（${new Date(backup.updatedAt).toLocaleString('zh-TW')}）。
+還原後，損毀的原檔會另存為 .corrupt 檔案保留。`,
+      buttons: ['從備份還原', '取消'],
+      defaultId: 0,
+      cancelId: 1,
+    });
+    if (response !== 0) throw error;
+    return restoreFactoryDataBackup(filePath);
+  }
+}
+
 ipcMain.handle('factory-data:create-new', async () => {
   const result = await showSaveDialog({
     title: '建立新的工廠管理存檔',
-    defaultPath: getFactoryDataPath(),
+    defaultPath: await suggestNewFactoryDataPath(path.dirname(activeDataPath || getFactoryDataPath())),
     filters: [{ name: '工廠管理 JSON 存檔', extensions: ['json'] }],
   });
 
@@ -111,9 +151,7 @@ ipcMain.handle('factory-data:create-new', async () => {
     return null;
   }
 
-  const session = await createFactoryDataSession(result.filePath);
-  activeDataPath = session.path;
-  return session;
+  return useSession(await createFactoryDataSession(result.filePath));
 });
 
 ipcMain.handle('factory-data:open', async () => {
@@ -128,15 +166,11 @@ ipcMain.handle('factory-data:open', async () => {
     return null;
   }
 
-  const session = await loadFactoryDataSession(result.filePaths[0]);
-  activeDataPath = session.path;
-  return session;
+  return useSession(await loadWithRecovery(result.filePaths[0]));
 });
 
 ipcMain.handle('factory-data:load-default', async () => {
-  const session = await loadFactoryDataSession(getFactoryDataPath());
-  activeDataPath = session.path;
-  return session;
+  return useSession(await loadWithRecovery(getFactoryDataPath()));
 });
 
 ipcMain.handle('factory-data:save', async (_event, data) => {
@@ -144,11 +178,7 @@ ipcMain.handle('factory-data:save', async (_event, data) => {
     throw new Error('尚未選擇存檔，請先建立或開啟存檔。');
   }
 
-  const savedData = await saveFactoryData(data, activeDataPath);
-  return {
-    data: savedData,
-    path: activeDataPath,
-  };
+  return useSession({ data: await saveFactoryData(data, activeDataPath, activeUpdatedAt), path: activeDataPath });
 });
 
 ipcMain.handle('factory-data:get-path', () => activeDataPath || getFactoryDataPath());
@@ -156,7 +186,7 @@ ipcMain.handle('factory-data:get-path', () => activeDataPath || getFactoryDataPa
 void app.whenReady().then(() => {
   if (!hasInstanceLock) { app.quit(); return; }
   createWindow();
-  if (app.isPackaged) void updater.check();
+  void updater.cleanup().finally(() => { if (app.isPackaged) void updater.check(); });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

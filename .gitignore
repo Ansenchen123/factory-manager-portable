@@ -7,3 +7,12 @@ data/*.tmp
 *.log
 .DS_Store
 /test-data/runtime/
+data/*.corrupt-*
+
+# AI agent local memory, settings and session files (AGENTS.md stays tracked as project rules)
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+.codex/
+.cursor/
+.aider*

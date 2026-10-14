@@ -87,6 +87,8 @@ const assert = require('node:assert/strict');
     await page.getByRole('searchbox').fill('heat-03');
     assert(await check('封口加熱片').isChecked());
     await button('後台管理').click();
+    // New-item forms start collapsed when the list already has entries.
+    if (await page.getByRole('button', { name: '新增產線', exact: true }).count()) await page.getByRole('button', { name: '新增產線', exact: true }).click();
     await page.getByLabel('產線名稱', { exact: true }).fill('草稿測試');
     page.once('dialog', dialog => dialog.dismiss());
     await button('返回前台').click();

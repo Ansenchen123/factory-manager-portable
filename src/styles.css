@@ -1,14 +1,15 @@
 :root {
   color: #172026;
   background: #f3f5f7;
+  /* No bundled fonts: Windows' own fonts come first so every factory PC renders alike. */
   font-family:
-    Inter,
-    "Noto Sans TC",
-    "Microsoft JhengHei",
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
     "Segoe UI",
+    "Microsoft JhengHei UI",
+    "Microsoft JhengHei",
+    -apple-system,
+    "PingFang TC",
+    "Noto Sans TC",
+    system-ui,
     sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -45,14 +46,6 @@ textarea:disabled {
 .appShell {
   min-height: 100vh;
   padding: 24px;
-}
-
-.centerState {
-  display: grid;
-  min-height: 100vh;
-  place-items: center;
-  color: #53616c;
-  font-size: 16px;
 }
 
 .startScreen {
@@ -193,7 +186,7 @@ textarea:disabled {
   background: #ffffff;
 }
 
-.systemBar div:first-child {
+.systemFile {
   display: flex;
   min-width: 0;
   align-items: center;
@@ -204,7 +197,7 @@ textarea:disabled {
   flex: 0 0 auto;
 }
 
-.systemBar span {
+.systemFile > span {
   min-width: 0;
   overflow: hidden;
   color: #53616c;
@@ -213,10 +206,18 @@ textarea:disabled {
 }
 
 .saveState {
+  display: inline-flex;
   flex: 0 0 auto;
-  color: #1d6d5f;
+  align-items: center;
+  gap: 4px;
+  color: #53616c;
   font-size: 14px;
+  font-weight: 600;
 }
+
+.saveState.isSaved { color: #1d6d5f; }
+.saveState.isDraft { color: #8a5a00; }
+.saveState.isError { color: #9f1d20; }
 
 .systemActions {
   display: flex;
@@ -265,7 +266,6 @@ textarea:disabled {
 .panelHeader {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 16px 16px 12px;
   border-bottom: 1px solid #e8ecef;
 }
@@ -276,9 +276,17 @@ textarea:disabled {
   letter-spacing: 0;
 }
 
-.panelHeader span {
+.countBadge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef2f5;
   color: #53616c;
-  font-size: 14px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pasteButton {
+  margin-left: auto;
 }
 
 .itemList {
@@ -349,27 +357,20 @@ textarea:disabled {
   font-size: 13px;
 }
 
-.itemActions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.alignLeft {
-  justify-content: flex-start;
-}
-
 .iconButton,
 .primaryButton,
 .secondaryButton,
-.successButton,
-.dangerButton {
+.successButton {
   display: inline-flex;
   min-height: 34px;
   align-items: center;
   justify-content: center;
   gap: 8px;
   border-radius: 6px;
+  font-weight: 600;
+}
+
+.primaryButton {
   font-weight: 700;
 }
 
@@ -385,10 +386,30 @@ textarea:disabled {
   background: #eef2f5;
 }
 
-.iconButton.danger,
-.dangerButton {
+.iconButton.danger {
   border-color: #e5a4a4;
   color: #9f1d20;
+}
+
+/* Borderless icon buttons for card toolbars; the hover fill shows the hit area. */
+.iconButton.ghost {
+  border-color: transparent;
+  background: transparent;
+  color: #53616c;
+}
+
+.iconButton.ghost:hover:not(:disabled) {
+  background: #e8ecef;
+  color: #172026;
+}
+
+.iconButton.ghost.danger:hover:not(:disabled) {
+  background: #ffe9e9;
+  color: #9f1d20;
+}
+
+.iconButton.ghost:disabled {
+  opacity: 0.3;
 }
 
 .primaryButton {
@@ -398,13 +419,16 @@ textarea:disabled {
 }
 
 .successButton {
-  border: 1px solid #277348;
-  background: #277348;
-  color: #ffffff;
+  border: 1px solid #9fd4ca;
+  background: #e8f4f0;
+  color: #1d6d5f;
 }
 
-.secondaryButton,
-.dangerButton {
+.successButton:hover:not(:disabled) {
+  border-color: #1d6d5f;
+}
+
+.secondaryButton {
   border: 1px solid #d8dee4;
   background: #ffffff;
   color: #24313a;
@@ -446,7 +470,7 @@ textarea:disabled {
   gap: 6px;
   color: #34424c;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .entityForm input,
@@ -456,7 +480,15 @@ textarea:disabled {
   border-radius: 6px;
   background: #ffffff;
   color: #101820;
+  font-size: 14px;
+  /* Inputs inherit the label's weight through font: inherit; values should read as plain text. */
+  font-weight: 400;
   outline: none;
+}
+
+.entityForm input::placeholder,
+.entityForm textarea::placeholder {
+  color: #8a96a0;
 }
 
 .entityForm input {
@@ -574,20 +606,22 @@ textarea:disabled {
 button:focus-visible { outline: 3px solid #1d6d5f; outline-offset: 3px; }
 button:hover:not(:disabled) { filter: brightness(0.96); }
 button { touch-action: manipulation; }
-.itemTools { display: flex; flex-wrap: wrap; gap: 6px; grid-column: 1 / -1; }
-.consumableItem > .itemTools { margin-top: 10px; }
+.itemTools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; grid-column: 1 / -1; }
+.toolButtons { display: flex; align-items: center; gap: 2px; }
+.itemTools > :not(.toolButtons) + .toolButtons { margin-left: auto; }
+.toolButtons > .danger { margin-left: 8px; }
+.consumableItem > .itemTools { flex: 0 0 100%; width: 100%; margin-top: 10px; }
 .panelHeader { flex-wrap: wrap; gap: 8px; }
 .panelContext, .fieldHint { margin: 0; padding: 10px 14px; font-size: 13px; line-height: 1.6; color: #53616c; overflow-wrap: anywhere; }
 .fieldHint { padding: 0; }
-.itemActions, .formActions, .summaryStrip { flex-wrap: wrap; }
+.formActions, .summaryStrip { flex-wrap: wrap; }
 .itemMain, .notes, .consumableTitle strong { overflow-wrap: anywhere; }
 .notes { white-space: pre-wrap; }
 .listItem { grid-template-columns: minmax(0, 1fr); }
 .itemMain { min-height: 44px; }
 .iconButton { width: 38px; min-height: 38px; }
 .entityForm input { height: 40px; }
-.primaryButton, .successButton, .secondaryButton, .dangerButton { min-height: 38px; }
-.dangerButton { color: #9f1d20; border-color: #e5a4a4; }
+.primaryButton, .successButton, .secondaryButton { min-height: 38px; }
 .consumableTitle .statusOk { color: #1d6d5f; }
 .consumableTitle .statusSoon { color: #8a5a00; }
 .consumableTitle .statusDue { color: #9f1d20; }
@@ -617,11 +651,15 @@ button { touch-action: manipulation; }
 .taskSection { border: 1px solid #d8dee4; border-radius: 8px; background: white; overflow: hidden; }
 .taskSectionHeader { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #e8ecef; background: #fafbfc; }
 .taskSectionHeader h2 { margin: 0; font-size: 17px; }
-.taskSectionHeader > span { color: #53616c; font-size: 13px; }
 .taskCount { margin-left: 8px; color: #53616c; font-size: 16px; font-weight: 500; }
 .taskList { margin: 0; padding: 0; list-style: none; }
-.taskRow { display: grid; grid-template-columns: minmax(0, 1fr) 76px; align-items: center; gap: 12px; padding: 12px 14px; }
-.taskRow + .taskRow { border-top: 1px solid #e8ecef; }
+.taskGroups { margin: 0; padding: 0; list-style: none; }
+.taskGroup + .taskGroup { border-top: 1px solid #e8ecef; }
+.taskGroupHeader { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 12px; padding: 10px 14px 2px; }
+.taskGroupHeader .taskLocation, .taskGroupHeader .taskMeta { margin: 0; }
+.upcomingSection { grid-column: 1 / -1; }
+.taskRow { display: grid; grid-template-columns: minmax(0, 1fr) 76px; align-items: center; gap: 12px; padding: 6px 14px 8px; }
+.taskRow + .taskRow { border-top: 1px dashed #e8ecef; }
 .taskDetails { min-width: 0; overflow-wrap: anywhere; }
 .taskLocation { margin: 0 0 4px; color: #34424c; font-size: 13px; font-weight: 650; line-height: 1.5; }
 .taskTitle { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
@@ -665,10 +703,10 @@ button { touch-action: manipulation; }
 .adminShell .entityForm textarea { height: 48px; min-height: 48px; padding: 6px 8px; }
 .adminShell .entityForm .fieldHint { font-size: 12px; line-height: 1.5; }
 .adminShell .formRow { gap: 8px; }
-.adminShell .primaryButton, .adminShell .secondaryButton, .adminShell .successButton, .adminShell .dangerButton { min-height: 34px; font-size: 13px; }
+.adminShell .primaryButton, .adminShell .secondaryButton, .adminShell .successButton { min-height: 34px; font-size: 13px; }
 .adminShell .viewSwitch { min-height: 44px; }
 .adminShell .iconButton { width: 34px; min-height: 34px; }
-.adminShell .listItem { gap: 6px; }
+.adminShell .listItem { gap: 2px; }
 .adminShell .consumableItem { display: flex; flex-wrap: wrap; gap: 6px 8px; padding: 8px; }
 .adminShell .consumableTitle { flex: 0 0 100%; }
 .adminShell .consumableTitle div { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
@@ -708,7 +746,7 @@ button { touch-action: manipulation; }
   .widePanel { grid-column: auto; }
   .panel { min-height: 0; }
   .formRow, .systemActions { flex-direction: column; align-items: stretch; }
-  .systemBar div:first-child { flex-wrap: wrap; }
+  .systemFile { flex-wrap: wrap; }
   .summaryStrip { gap: 6px; }
   .summaryStrip span { min-width: 0; }
   .consumableTitle { flex-wrap: wrap; }
@@ -725,8 +763,9 @@ button { touch-action: manipulation; }
   .maintenanceSearch > p { grid-column: 1; }
   .searchField { gap: 8px; flex-wrap: wrap; }
   .searchField input { width: 100px; }
-  .taskSectionHeader, .taskRow { padding: 12px; }
-  .taskSectionHeader > span { display: none; }
+  .taskSectionHeader { padding: 12px; }
+  .taskGroupHeader { padding: 10px 12px 2px; }
+  .taskRow { padding: 6px 12px 8px; }
   .taskRow { grid-template-columns: minmax(0, 1fr) 64px; gap: 8px; }
   .undoRow > button { min-height: 44px; }
   .adminShell { padding: 12px; }
@@ -736,3 +775,13 @@ button { touch-action: manipulation; }
   .adminShell .systemActions { flex-direction: row; flex-wrap: wrap; align-items: center; }
   .adminShell .entityForm input { height: 40px; }
 }
+.iconButton.ghost, .adminShell .iconButton.ghost { width: 32px; min-height: 32px; }
+.updateNotice { padding: 8px 10px; border-radius: 6px; background: #fff4da; color: #8a5a00; }
+.formToggle { padding: 10px 14px 14px; border-top: 1px solid #e8ecef; }
+.formToggle .secondaryButton { width: 100%; border-style: dashed; color: #1d6d5f; }
+.adminShell .formToggle { padding: 8px 10px 10px; }
+.dateField { position: relative; display: flex; flex: 1; min-width: 0; }
+.entityForm .dateField input[type="text"] { padding-right: 40px; }
+.dateField .datePickerButton, .adminShell .dateField .datePickerButton { position: absolute; right: 3px; bottom: 3px; width: 30px; min-height: 30px; }
+.adminShell .dateField .datePickerButton { width: 28px; min-height: 28px; }
+.entityForm .dateField input.datePicker { position: absolute; right: 0; bottom: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }

@@ -6,6 +6,8 @@ export type UpdateState = {
   release?: UpdateRelease;
   percent?: number;
   message?: string;
+  // Outcome of the previous update attempt, kept across checks.
+  notice?: string;
 };
 
 export type UpdateApi = {

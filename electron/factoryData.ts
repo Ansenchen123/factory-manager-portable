@@ -1,7 +1,7 @@
 import { app } from 'electron';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { createEmptyFactoryData, type FactoryData, validateFactoryData } from '../shared/schema';
+import { createEmptyFactoryData, type FactoryData, fileChangedCode, validateFactoryData } from '../shared/schema';
 
 export type DataPathOptions = {
   isPackaged: boolean;
@@ -63,7 +63,21 @@ export async function loadFactoryData(filePath = getFactoryDataPath()): Promise<
   }
 }
 
-export async function saveFactoryData(data: FactoryData, filePath = getFactoryDataPath()): Promise<FactoryData> {
+async function readUpdatedAt(filePath: string): Promise<string | undefined> {
+  try {
+    return (JSON.parse(await fs.readFile(filePath, 'utf8')) as { updatedAt?: string }).updatedAt ?? '';
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+    return '';
+  }
+}
+
+export async function saveFactoryData(data: FactoryData, filePath = getFactoryDataPath(), expectedUpdatedAt?: string): Promise<FactoryData> {
+  if (expectedUpdatedAt !== undefined) {
+    const current = await readUpdatedAt(filePath);
+    if (current !== undefined && current !== expectedUpdatedAt) throw new Error(fileChangedCode);
+  }
+
   const validData = validateFactoryData({
     ...data,
     updatedAt: new Date().toISOString(),
@@ -100,7 +114,41 @@ export async function loadFactoryDataSession(filePath = getFactoryDataPath()): P
   };
 }
 
+function timestampForFile(now = new Date()): string {
+  return now.toISOString().replace(/[-:]/g, '').replace(/\..+$/, '').replace('T', '-');
+}
+
+// Suggests a new file beside the current one so "new" never targets existing data by default.
+export async function suggestNewFactoryDataPath(directory: string, now = new Date()): Promise<string> {
+  const day = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+  for (let index = 1; ; index++) {
+    const candidate = path.join(directory, `工廠存檔-${day}${index > 1 ? `-${index}` : ''}.json`);
+    try { await fs.access(candidate); } catch { return candidate; }
+  }
+}
+
+export async function readFactoryDataBackup(filePath: string): Promise<FactoryData | undefined> {
+  try {
+    return validateFactoryData(JSON.parse(await fs.readFile(`${filePath}.bak`, 'utf8')));
+  } catch {
+    return undefined;
+  }
+}
+
+// Keeps the unreadable file for inspection, then puts the last good save back in place.
+export async function restoreFactoryDataBackup(filePath: string): Promise<FactoryDataSession> {
+  const backup = await readFactoryDataBackup(filePath);
+  if (!backup) throw new Error('沒有可用的備份。');
+  await fs.copyFile(filePath, `${filePath}.corrupt-${timestampForFile()}`).catch(() => undefined);
+  await fs.copyFile(`${filePath}.bak`, filePath);
+  return { data: backup, path: filePath };
+}
+
 export async function createFactoryDataSession(filePath: string): Promise<FactoryDataSession> {
+  // The save dialog already confirmed replacement; keep a dated copy because .bak rotates on the next save.
+  await fs.copyFile(filePath, `${filePath}.replaced-${timestampForFile()}.bak`).catch(error => {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  });
   const data = await saveFactoryData(createEmptyFactoryData(), filePath);
 
   return {

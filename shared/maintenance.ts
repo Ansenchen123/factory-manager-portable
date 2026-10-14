@@ -31,8 +31,14 @@ export function addDays(date: Date, days: number): Date {
   return next;
 }
 
-export function startOfUtcDay(date: Date): Date {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+// Front desk and admin share one wording and one color scale for due dates.
+export function dueLabel(daysRemaining: number): string {
+  if (daysRemaining < 0) return `逾期 ${-daysRemaining} 天`;
+  return daysRemaining === 0 ? '今天到期' : `${daysRemaining} 天後`;
+}
+
+export function dueTone(daysRemaining: number): 'statusDue' | 'statusSoon' | 'statusOk' {
+  return daysRemaining < 0 ? 'statusDue' : daysRemaining <= 7 ? 'statusSoon' : 'statusOk';
 }
 
 export function getMaintenanceInfo(consumable: Consumable, today = new Date()): MaintenanceInfo {

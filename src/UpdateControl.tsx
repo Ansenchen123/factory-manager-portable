@@ -7,6 +7,21 @@ export function UpdateControl({ blocked, onInstalling }: { blocked: boolean; onI
   const [error, setError] = useState('');
   const blockedRef = useRef(blocked);
   blockedRef.current = blocked;
+  const root = useRef<HTMLDivElement>(null);
+  const noticeShown = useRef(false);
+  const reveal = (next: UpdateState) => {
+    if (next.status === 'available') setOpen(true);
+    if (next.notice && !noticeShown.current) { noticeShown.current = true; setOpen(true); }
+  };
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: Event) => {
+      if (event instanceof KeyboardEvent ? event.key === 'Escape' : !root.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener('keydown', close);
+    document.addEventListener('pointerdown', close);
+    return () => { document.removeEventListener('keydown', close); document.removeEventListener('pointerdown', close); };
+  }, [open]);
   useEffect(() => {
     const api = window.appUpdates;
     if (!api) return;
@@ -15,11 +30,11 @@ export function UpdateControl({ blocked, onInstalling }: { blocked: boolean; onI
     const off = api.onState(next => {
       received = true;
       setState(next);
-      if (next.status === 'available') setOpen(true);
+      reveal(next);
       onInstalling(next.status === 'installing');
     });
     void api.getState().then(next => {
-      if (alive && !received) { setState(next); if (next.status === 'available') setOpen(true); }
+      if (alive && !received) { setState(next); reveal(next); }
     }).catch(() => { if (alive) setError('無法讀取更新狀態。'); });
     return () => { alive = false; off(); };
   }, [onInstalling]);
@@ -38,13 +53,14 @@ export function UpdateControl({ blocked, onInstalling }: { blocked: boolean; onI
       }
     } catch { onInstalling(false); setError('更新未完成，請重試。'); }
   }
-  return <div className="updateControl">
+  return <div className="updateControl" ref={root}>
     <button type="button" className="secondaryButton compact" onClick={() => setOpen(!open)} aria-expanded={open}>
       {state.status === 'downloading' ? `下載更新 ${state.percent ?? 0}%` : available ? `新版 ${state.release!.version}` : `版本 ${state.currentVersion}`}
     </button>
     {open && <section className="updatePopover" aria-label="軟體更新">
       <strong>軟體更新</strong>
       <p>目前版本 {state.currentVersion}</p>
+      {state.notice && <p className="updateNotice">{state.notice}</p>}
       {available && <><p>新版 {state.release!.version}</p><pre className="releaseNotes">{state.release!.notes || '此版本未提供更新說明。'}</pre></>}
       <p role="status">{error || state.message || ({
         idle: '啟動時自動檢查正式版本。', checking: '正在檢查更新…', current: '目前已是最新版本。',

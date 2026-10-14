@@ -73,3 +73,11 @@ describe('maintenance reminders', () => {
     ).toThrow('maintenanceIntervalDays must be a positive integer');
   });
 });
+
+describe('due labels', () => {
+  it('uses one wording and color scale for every view', async () => {
+    const { dueLabel, dueTone } = await import('../shared/maintenance');
+    expect([-3, 0, 5, 30].map(dueLabel)).toEqual(['逾期 3 天', '今天到期', '5 天後', '30 天後']);
+    expect([-1, 0, 7, 8].map(dueTone)).toEqual(['statusDue', 'statusSoon', 'statusSoon', 'statusOk']);
+  });
+});

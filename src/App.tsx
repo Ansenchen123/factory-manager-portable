@@ -2,12 +2,13 @@ import { ItemTools } from './ItemTools';
 import { FrontDesk } from './FrontDesk';
 import { UpdateControl } from './UpdateControl';
 import { SelectableCard } from './SelectableCard';
+import { DateField } from './DateField';
 import { copyItem, moveItem, dropCard, type CardLocation, type DropPosition } from '../shared/items';
-import { CheckCircle2, Edit3, FileJson, FolderOpen, Plus, Save, Trash2, Wrench } from 'lucide-react';
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { getMaintenanceInfo, localDateString, parseCalendarDate, markConsumableMaintained, type MaintenanceStatus } from '../shared/maintenance';
+import { CheckCircle2, FileJson, FolderOpen, Plus, Save, Wrench } from 'lucide-react';
+import { FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { dueLabel, dueTone, getMaintenanceInfo, localDateString, parseCalendarDate, markConsumableMaintained } from '../shared/maintenance';
 import type { Consumable, FactoryData, Machine, ProductionLine } from '../shared/schema';
-import { createEmptyFactoryData } from '../shared/schema';
+import { createEmptyFactoryData, fileChangedCode } from '../shared/schema';
 
 type FactoryDataSession = {
   data: FactoryData;
@@ -84,26 +85,6 @@ function formatDate(value?: string | Date): string {
   return localDateString(new Date(value)).replaceAll('-', '/');
 }
 
-function statusLabel(status: MaintenanceStatus, daysRemaining: number): string {
-  if (status === 'due') {
-    return daysRemaining < 0 ? `逾期 ${Math.abs(daysRemaining)} 日` : '今日到期';
-  }
-
-  if (status === 'soon') {
-    return `${daysRemaining} 日內到期`;
-  }
-
-  return `${daysRemaining} 日後`;
-}
-
-function statusTone(status: MaintenanceStatus): string {
-  return {
-    ok: 'statusOk',
-    soon: 'statusSoon',
-    due: 'statusDue',
-  }[status];
-}
-
 function findSelectedLine(data: FactoryData, selectedLineId?: string): ProductionLine | undefined {
   return data.productionLines.find((line) => line.id === selectedLineId) ?? data.productionLines[0];
 }
@@ -131,12 +112,15 @@ export function App() {
   const composing = useRef(false);
   const [dragging, setDragging] = useState<CardLocation>();
   const [transferring, setTransferring] = useState(false);
+  // "New" forms stay collapsed until asked for; editing, a draft, or an empty list also shows them.
+  const [openForms, setOpenForms] = useState({ line: false, machine: false, consumable: false });
   const [clipboard, setClipboard] = useState<{ kind: 'line' | 'machine' | 'consumable'; item: ProductionLine | Machine | Consumable }>();
   const lineHasDraft = JSON.stringify(lineForm) !== JSON.stringify(lineFields(data.productionLines.find(line => line.id === lineForm.id)));
   const machines = data.productionLines.flatMap(line => line.machines);
   const machineHasDraft = JSON.stringify(machineForm) !== JSON.stringify(machineFields(machines.find(machine => machine.id === machineForm.id)));
   const consumableHasDraft = JSON.stringify(consumableForm) !== JSON.stringify(consumableFields(machines.flatMap(machine => machine.consumables).find(item => item.id === consumableForm.id)));
   const hasDraft = lineHasDraft || machineHasDraft || consumableHasDraft;
+  const closeForm = (kind: 'line' | 'machine' | 'consumable') => setOpenForms(current => ({ ...current, [kind]: false }));
   // Save callbacks must consider drafts typed after the write began.
   const latestDrafts = useRef({ machine: machineHasDraft, consumable: consumableHasDraft });
   latestDrafts.current = { machine: machineHasDraft, consumable: consumableHasDraft };
@@ -187,6 +171,7 @@ export function App() {
     setData(session.data);
     setDataPath(session.path);
     setClipboard(undefined);
+    setOpenForms({ line: false, machine: false, consumable: false });
     setSelectedLineId(session.data.productionLines[0]?.id);
     setSelectedMachineId(session.data.productionLines[0]?.machines[0]?.id);
     setLineForm(emptyLineForm);
@@ -232,7 +217,9 @@ export function App() {
       setMessage(successMessage);
       onSuccess?.();
     } catch (saveError) {
-      setError('儲存失敗，變更尚未套用，輸入內容已保留。請確認存檔位置可寫入後重試。');
+      setError(String(saveError).includes(fileChangedCode)
+        ? '存檔已被其他程式或電腦修改。為避免覆蓋對方的資料，這次變更沒有儲存。請按「開啟其他存檔」重新開啟此檔後再操作。'
+        : '儲存失敗，變更尚未套用，輸入內容已保留。請確認存檔位置可寫入後重試。');
     } finally {
       saving.current = false;
       setIsBusy(false);
@@ -288,16 +275,38 @@ export function App() {
     }, '副本已建立。維護日期請依實際情況設定。');
   }
 
-  function itemTools(kind: 'line' | 'machine' | 'consumable', item: ProductionLine | Machine | Consumable, index: number, count: number) {
-    return <ItemTools name={item.name} index={index} count={count} busy={isBusy}
+  function itemTools(kind: 'line' | 'machine' | 'consumable', item: ProductionLine | Machine | Consumable, index: number, count: number,
+    onEdit: () => void, onDelete: () => void, leading?: ReactNode) {
+    return <ItemTools name={item.name} index={index} count={count} busy={isBusy} onEdit={onEdit} onDelete={onDelete}
       onMove={direction => move(kind, item.id, direction)}
-      onCopy={() => { setClipboard({ kind, item: structuredClone(item) }); setError(''); setMessage(`已複製「${item.name}」。請選擇目的位置後貼上；副本不含維護日期。`); }} />;
+      onCopy={() => { setClipboard({ kind, item: structuredClone(item) }); setError(''); setMessage(`已複製「${item.name}」。請選擇目的位置後貼上；副本不含維護日期。`); }}>
+      {leading}
+    </ItemTools>;
   }
 
+  // Shown only while the clipboard holds this kind, so idle headers stay quiet.
   function pasteButton(kind: 'line' | 'machine' | 'consumable', label: string) {
-    return <button className="secondaryButton compact" type="button" disabled={isBusy || clipboard?.kind !== kind || (kind === 'machine' && !selectedLine) || (kind === 'consumable' && !selectedMachine)}
-      title={clipboard?.kind === kind ? `貼上「${clipboard.item.name}」` : `先複製${label}`}
+    if (clipboard?.kind !== kind) return null;
+    return <button className="secondaryButton compact pasteButton" type="button" disabled={isBusy || (kind === 'machine' && !selectedLine) || (kind === 'consumable' && !selectedMachine)}
+      title={`貼上「${clipboard.item.name}」`}
       onClick={() => paste(kind)}>貼上{label}</button>;
+  }
+
+  function panelHeader(id: string, title: string, count: number, paste: ReactNode) {
+    return <div className="panelHeader">
+      <h2 id={id}>{title}</h2>
+      <span className="countBadge">{count} 筆</span>
+      {paste}
+    </div>;
+  }
+
+  function addToggle(kind: 'line' | 'machine' | 'consumable', label: string) {
+    return <div className="formToggle">
+      <button className="secondaryButton" type="button" disabled={isBusy}
+        onClick={() => { setOpenForms(current => ({ ...current, [kind]: true })); focusForm(`${kind}-form`); }}>
+        <Plus size={16} />新增{label}
+      </button>
+    </div>;
   }
 
   function selectLine(line: ProductionLine) {
@@ -364,6 +373,7 @@ export function App() {
         setMachineForm(emptyMachineForm);
         setConsumableForm(emptyConsumableForm);
       }
+      if (!lineForm.id) setOpenForms(current => ({ ...current, line: true }));
       setLineForm(current => current === lineForm ? emptyLineForm : current);
     });
   }
@@ -432,6 +442,7 @@ export function App() {
         setSelectedMachineId(newMachineId);
         setConsumableForm(emptyConsumableForm);
       }
+      if (!machineForm.id) setOpenForms(current => ({ ...current, machine: true }));
       setMachineForm(current => current === machineForm ? emptyMachineForm : current);
     });
   }
@@ -527,7 +538,10 @@ export function App() {
         };
       }),
       updatedAt: timestamp,
-    }), consumableForm.id ? '耗材已更新。' : '耗材已建立。', () => setConsumableForm(current => current === consumableForm ? emptyConsumableForm : current));
+    }), consumableForm.id ? '耗材已更新。' : '耗材已建立。', () => {
+      if (!consumableForm.id) setOpenForms(current => ({ ...current, consumable: true }));
+      setConsumableForm(current => current === consumableForm ? emptyConsumableForm : current);
+    });
   }
 
   function deleteLine(lineId: string) {
@@ -656,6 +670,7 @@ export function App() {
     setDragging(undefined);
     setUndos([]);
     setMessage('');
+    setOpenForms({ line: false, machine: false, consumable: false });
     setView(view === 'front' ? 'admin' : 'front');
   }
 
@@ -728,7 +743,7 @@ export function App() {
           <span>機台 {data.productionLines.reduce((count, line) => count + line.machines.length, 0)}</span>
           <span>耗材 {allConsumables.length}</span>
           <span className={dueCount > 0 ? 'dangerText' : ''}>到期 {dueCount}</span>
-          <span className={soonCount > 0 ? 'warningText' : ''}>7 日內到期 {soonCount}</span>
+          <span className={soonCount > 0 ? 'warningText' : ''}>7 天內到期 {soonCount}</span>
         </div>}
         <button type="button" className="secondaryButton viewSwitch" disabled={isBusy} onClick={switchView}>
           {view === 'front' ? '後台管理' : '返回前台'}
@@ -736,9 +751,9 @@ export function App() {
       </header>
 
       <section className="systemBar" aria-live="polite">
-        <div>
+        <div className="systemFile">
           <strong>目前存檔</strong>
-          <span title={dataPath}>{dataPath}</span>
+          <span title={dataPath}>{dataPath.split(/[\\/]/).pop()}</span>
         </div>
         <div className="systemActions">
           <UpdateControl blocked={hasDraft || isBusy} onInstalling={setInstallingUpdate} />
@@ -751,7 +766,9 @@ export function App() {
             <FolderOpen size={16} />
             開啟其他存檔
           </button>
-          <div className="saveState">{isBusy ? '正在儲存…' : hasDraft ? '有尚未儲存的內容' : error ? '請查看錯誤訊息' : '已儲存'}</div>
+          <div className={`saveState ${isBusy ? '' : hasDraft ? 'isDraft' : error ? 'isError' : 'isSaved'}`}>
+            {isBusy ? '正在儲存…' : hasDraft ? '有尚未儲存的內容' : error ? '請查看錯誤訊息' : <><CheckCircle2 size={15} aria-hidden="true" /><span>已儲存</span></>}
+          </div>
         </div>
       </section>
 
@@ -770,11 +787,7 @@ export function App() {
         onClickCapture={event => { if (saving.current && (event.target as HTMLElement).closest('button')) { event.preventDefault(); event.stopPropagation(); } }}>
 
         <section className="panel" aria-labelledby="lines-heading">
-          <div className="panelHeader">
-            <h2 id="lines-heading">產線</h2>
-            <span>{data.productionLines.length} 筆</span>
-            {pasteButton('line', '產線')}
-          </div>
+          {panelHeader('lines-heading', '產線', data.productionLines.length, pasteButton('line', '產線'))}
 
           <div className="itemList">
             {data.productionLines.length === 0 ? (
@@ -792,32 +805,16 @@ export function App() {
                     <strong>{line.name}</strong>
                     <span>{line.description || '未填寫描述'}</span>
                   </button>
-                  <div className="itemActions">
-                    <button
-                      title="編輯產線" aria-label={`編輯 ${line.name}`}
-                      className="iconButton"
-                      type="button"
-                      onClick={() => { if (lineHasDraft && !window.confirm('捨棄尚未儲存的產線內容並編輯此產線？')) return; if (!selectLine(line)) return; setLineForm(lineFields(line)); focusForm('line-form'); }}
-                    >
-                      <Edit3 size={16} />
-                    </button>
-                    <button
-                      title="刪除產線" aria-label={`刪除 ${line.name}`}
-                      className="iconButton danger"
-                      type="button"
-                      onClick={() => deleteLine(line.id)}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                  {itemTools('line', line, index, data.productionLines.length)}
+                  {itemTools('line', line, index, data.productionLines.length,
+                    () => { if (lineHasDraft && !window.confirm('捨棄尚未儲存的產線內容並編輯此產線？')) return; if (!selectLine(line)) return; setLineForm(lineFields(line)); focusForm('line-form'); },
+                    () => deleteLine(line.id))}
                 </SelectableCard>
               ))
             )}
           </div>
 
           <p className="fieldHint dragHint">拖動卡片可調整產線順序；也可使用上下移按鈕。</p>
-          <form noValidate autoComplete="off" className="entityForm" id="line-form" onSubmit={submitLine}>
+          {!(openForms.line || lineForm.id || lineHasDraft || data.productionLines.length === 0) ? addToggle('line', '產線') : <form noValidate autoComplete="off" className="entityForm" id="line-form" onSubmit={submitLine}>
             <h3>{lineForm.id ? '編輯產線' : '新增產線'}</h3>
             <label>
               產線名稱
@@ -835,21 +832,17 @@ export function App() {
                 {lineForm.id ? <Save size={16} /> : <Plus size={16} />}
                 {lineForm.id ? '儲存產線' : '建立產線'}
               </button>
-              {lineForm.id && (
-                <button className="secondaryButton" type="button" onClick={() => setLineForm(emptyLineForm)}>
+              {(lineForm.id || openForms.line) && (
+                <button className="secondaryButton" type="button" onClick={() => { setLineForm(emptyLineForm); closeForm('line'); }}>
                   取消
                 </button>
               )}
             </div>
-          </form>
+          </form>}
         </section>
 
         <section className="panel" aria-labelledby="machines-heading">
-          <div className="panelHeader">
-            <h2 id="machines-heading">機台</h2>
-            <span>{selectedLine?.machines.length ?? 0} 筆</span>
-            {pasteButton('machine', '機台')}
-          </div>
+          {panelHeader('machines-heading', '機台', selectedLine?.machines.length ?? 0, pasteButton('machine', '機台'))}
 
           <p className="panelContext">{selectedLine?.name || '尚未選擇產線'}</p>
           <div className="itemList">
@@ -865,32 +858,16 @@ export function App() {
                     <strong>{machine.name}</strong>
                     <span>{[machine.code, machine.model, machine.location].filter(Boolean).join(' / ') || '未填寫機台資料'}</span>
                   </button>
-                  <div className="itemActions">
-                    <button
-                      title="編輯機台" aria-label={`編輯 ${machine.name}`}
-                      className="iconButton"
-                      type="button"
-                      onClick={() => { if (machineHasDraft && !window.confirm('捨棄尚未儲存的機台內容並編輯此機台？')) return; if (!selectMachine(machine)) return; setMachineForm(machineFields(machine)); focusForm('machine-form'); }}
-                    >
-                      <Edit3 size={16} />
-                    </button>
-                    <button
-                      title="刪除機台" aria-label={`刪除 ${machine.name}`}
-                      className="iconButton danger"
-                      type="button"
-                      onClick={() => deleteMachine(machine.id)}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                  {itemTools('machine', machine, index, selectedLine.machines.length)}
+                  {itemTools('machine', machine, index, selectedLine.machines.length,
+                    () => { if (machineHasDraft && !window.confirm('捨棄尚未儲存的機台內容並編輯此機台？')) return; if (!selectMachine(machine)) return; setMachineForm(machineFields(machine)); focusForm('machine-form'); },
+                    () => deleteMachine(machine.id))}
                 </SelectableCard>
               ))
             )}
           </div>
 
           <p className="fieldHint dragHint">拖動卡片可排序，拖到左側產線卡片可移轉機台。</p>
-          {selectedLine && <form inert={transferring} noValidate autoComplete="off" className="entityForm" id="machine-form" onSubmit={submitMachine}>
+          {selectedLine && (!(openForms.machine || machineForm.id || machineHasDraft || selectedLine.machines.length === 0) ? addToggle('machine', '機台') : <form inert={transferring} noValidate autoComplete="off" className="entityForm" id="machine-form" onSubmit={submitMachine}>
             <h3>{machineForm.id ? '編輯機台' : '新增機台'}</h3>
             <label>
               機台名稱
@@ -931,21 +908,17 @@ export function App() {
                 {machineForm.id ? <Save size={16} /> : <Plus size={16} />}
                 {machineForm.id ? '儲存機台' : '建立機台'}
               </button>
-              {machineForm.id && (
-                <button className="secondaryButton" type="button" onClick={() => setMachineForm(emptyMachineForm)}>
+              {(machineForm.id || openForms.machine) && (
+                <button className="secondaryButton" type="button" onClick={() => { setMachineForm(emptyMachineForm); closeForm('machine'); }}>
                   取消
                 </button>
               )}
             </div>
-          </form>}
+          </form>)}
         </section>
 
         <section className="panel widePanel" aria-labelledby="consumables-heading">
-          <div className="panelHeader">
-            <h2 id="consumables-heading">耗材與維護</h2>
-            <span>{selectedMachine?.consumables.length ?? 0} 筆</span>
-            {pasteButton('consumable', '耗材')}
-          </div>
+          {panelHeader('consumables-heading', '耗材與維護', selectedMachine?.consumables.length ?? 0, pasteButton('consumable', '耗材'))}
 
           <p className="panelContext">{selectedMachine ? `${selectedLine?.name} ／ ${selectedMachine.name}` : '尚未選擇機台'}</p>
           <div className="itemList consumableList">
@@ -963,14 +936,14 @@ export function App() {
                         <strong>{consumable.name}</strong>
                         <span>{consumable.sku || '未填寫料號'}</span>
                       </div>
-                      <span className={`statusPill ${statusTone(maintenance.status)}`}>
-                        {statusLabel(maintenance.status, maintenance.daysRemaining)}
+                      <span className={`statusPill ${dueTone(maintenance.daysRemaining)}`}>
+                        {dueLabel(maintenance.daysRemaining)}
                       </span>
                     </div>
                     <dl className="maintenanceMeta">
                       <div>
                         <dt>週期</dt>
-                        <dd>每 {consumable.maintenanceIntervalDays} 日</dd>
+                        <dd>每 {consumable.maintenanceIntervalDays} 天</dd>
                       </div>
                       <div>
                         <dt>上次維護</dt>
@@ -982,32 +955,20 @@ export function App() {
                       </div>
                     </dl>
                     {consumable.notes && <p className="notes">{consumable.notes}</p>}
-                    <div className="itemActions alignLeft">
+                    {itemTools('consumable', consumable, index, selectedMachine.consumables.length,
+                      () => { if (consumableHasDraft && !window.confirm('捨棄尚未儲存的耗材內容並編輯此耗材？')) return; setConsumableForm(consumableFields(consumable)); focusForm('consumable-form'); },
+                      () => deleteConsumable(consumable.id),
                       <button className="successButton" disabled={isBusy} type="button" onClick={() => completeMaintenance(consumable.id)}>
                         <CheckCircle2 size={16} />
                         完成今日維護
-                      </button>
-                      <button
-                        className="secondaryButton compact"
-                        type="button"
-                        onClick={() => { if (consumableHasDraft && !window.confirm('捨棄尚未儲存的耗材內容並編輯此耗材？')) return; setConsumableForm(consumableFields(consumable)); focusForm('consumable-form'); }}
-                      >
-                        <Edit3 size={16} />
-                        編輯
-                      </button>
-                      <button className="dangerButton compact" type="button" onClick={() => deleteConsumable(consumable.id)}>
-                        <Trash2 size={16} />
-                        刪除
-                      </button>
-                    </div>
-                    {itemTools('consumable', consumable, index, selectedMachine.consumables.length)}
+                      </button>)}
                   </article>
                 );
               })
             )}
           </div>
 
-          {selectedMachine && <form inert={transferring} noValidate autoComplete="off" className="entityForm" id="consumable-form" onSubmit={submitConsumable}>
+          {selectedMachine && (!(openForms.consumable || consumableForm.id || consumableHasDraft || selectedMachine.consumables.length === 0) ? addToggle('consumable', '耗材') : <form inert={transferring} noValidate autoComplete="off" className="entityForm" id="consumable-form" onSubmit={submitConsumable}>
             <h3>{consumableForm.id ? '編輯耗材' : '新增耗材'}</h3>
             <div className="formRow">
               <label>
@@ -1027,7 +988,7 @@ export function App() {
                 />
               </label>
             <label>
-              維護週期（日）
+              維護週期（天）
               <input
                 disabled={!selectedMachine}
                 min="1" step="1" required
@@ -1040,16 +1001,12 @@ export function App() {
             </label>
             </div>
             <div className="formRow">
-              <label>上次維護日期
-                <input disabled={!selectedMachine} type="text" placeholder="YYYY-MM-DD" aria-describedby="date-help"
-                  value={consumableForm.lastMaintainedDate} onChange={event => setConsumableForm({ ...consumableForm, lastMaintainedDate: event.target.value })} />
-              </label>
-              <label>預定維護日期
-                <input disabled={!selectedMachine} type="text" placeholder="YYYY-MM-DD" aria-describedby="date-help"
-                  value={consumableForm.plannedMaintenanceDate} onChange={event => setConsumableForm({ ...consumableForm, plannedMaintenanceDate: event.target.value })} />
-              </label>
+              <DateField label="上次維護日期" disabled={!selectedMachine} describedBy="date-help" value={consumableForm.lastMaintainedDate}
+                onChange={value => setConsumableForm(current => ({ ...current, lastMaintainedDate: value }))} />
+              <DateField label="預定維護日期" disabled={!selectedMachine} describedBy="date-help" value={consumableForm.plannedMaintenanceDate}
+                onChange={value => setConsumableForm(current => ({ ...current, plannedMaintenanceDate: value }))} />
             </div>
-            <p className="fieldHint" id="date-help">西元日期 YYYY-MM-DD；預定留空時依週期計算。</p>
+            <p className="fieldHint" id="date-help">西元日期 YYYY-MM-DD，或按月曆圖示選擇；預定留空時依週期計算。</p>
             <label>
               備註
               <textarea aria-label="備註"
@@ -1063,13 +1020,13 @@ export function App() {
                 {consumableForm.id ? <Save size={16} /> : <Wrench size={16} />}
                 {consumableForm.id ? '儲存耗材' : '建立耗材'}
               </button>
-              {consumableForm.id && (
-                <button className="secondaryButton" type="button" onClick={() => setConsumableForm(emptyConsumableForm)}>
+              {(consumableForm.id || openForms.consumable) && (
+                <button className="secondaryButton" type="button" onClick={() => { setConsumableForm(emptyConsumableForm); closeForm('consumable'); }}>
                   取消
                 </button>
               )}
             </div>
-          </form>}
+          </form>)}
         </section>
       </section>}
       {undos.length > 0 && <aside className="undoPanel" aria-label="復原維護" aria-live="polite">

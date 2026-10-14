@@ -86,3 +86,15 @@ it('ignores a stale initial state after receiving a newer update event', async (
   await act(async () => finish({ ...available, status: 'current', release: undefined }));
   await waitFor(() => expect(screen.getByText('維護工作台更新')).toBeInTheDocument());
 });
+
+it('closes the release popover with Escape or an outside click', async () => {
+  const user = userEvent.setup();
+  render(<><UpdateControl blocked={false} onInstalling={onInstalling} /><p>outside</p></>);
+  await screen.findByText('維護工作台更新');
+  await user.keyboard('{Escape}');
+  expect(screen.queryByText('維護工作台更新')).not.toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: '新版 1.3.0' }));
+  expect(screen.getByText('維護工作台更新')).toBeInTheDocument();
+  await user.click(screen.getByText('outside'));
+  expect(screen.queryByText('維護工作台更新')).not.toBeInTheDocument();
+});

@@ -87,6 +87,8 @@ require(${JSON.stringify(path.join(root, 'dist-electron/electron/main.js'))});
     await page.getByRole('button', { name: /讀取預設存檔/ }).click();
     await page.getByRole('button', { name: `新版 ${version}`, exact: true }).click();
     await page.getByRole('button', { name: '後台管理', exact: true }).click();
+    // New-item forms start collapsed when the list already has entries.
+    if (await page.getByRole('button', { name: '新增產線', exact: true }).count()) await page.getByRole('button', { name: '新增產線', exact: true }).click();
     await page.getByLabel('產線名稱', { exact: true }).fill('尚未儲存');
     // The same update component remains mounted between front and admin.
     if (!await page.getByRole('button', { name: '下載並更新', exact: true }).isVisible()) await page.getByRole('button', { name: `新版 ${version}`, exact: true }).click();

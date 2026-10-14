@@ -52,7 +52,7 @@ const assert = require('node:assert/strict');
     await label('耗材名稱').fill('冷卻液濾芯');
     await button('建立耗材').click(); await saved();
     await capture('consumable-created', true);
-    await button('編輯').click();
+    await button('編輯 冷卻液濾芯').click();
     await label('備註').fill('定期檢查密封圈');
     await button('儲存耗材').click(); await saved();
     assert(await label('備註').evaluate(element => element === document.activeElement));

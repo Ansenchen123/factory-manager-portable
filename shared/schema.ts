@@ -40,6 +40,9 @@ export const factoryDataSchema = z.object({
   updatedAt: isoDateString,
 });
 
+// Save is refused with this message when the file changed on disk after this session read it.
+export const fileChangedCode = 'FACTORY_FILE_CHANGED';
+
 export type Consumable = z.infer<typeof consumableSchema>;
 export type Machine = z.infer<typeof machineSchema>;
 export type ProductionLine = z.infer<typeof productionLineSchema>;

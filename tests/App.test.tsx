@@ -43,6 +43,11 @@ async function openDefaultSave(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: /讀取預設存檔/ }));
   await user.click(screen.getByRole('button', { name: '後台管理' }));
   await screen.findByText('A線', { selector: 'strong' });
+  // "New" forms start collapsed; these tests exercise them, so expand all three.
+  for (const name of ['新增產線', '新增機台', '新增耗材']) {
+    const toggle = screen.queryByRole('button', { name });
+    if (toggle) await user.click(toggle);
+  }
 }
 
 describe('App', () => {
@@ -86,7 +91,7 @@ describe('App', () => {
 
   it('selects action-row whitespace and selects the entity being edited', async () => {
     const user = await openBoard();
-    await user.click(card('B線').querySelector('.itemActions')!);
+    await user.click(card('B線').querySelector('.itemTools')!);
     expect(card('B線')).toHaveClass('selected');
     expect(screen.queryByText('CNC-01')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '編輯 A線' }));
@@ -105,7 +110,7 @@ describe('App', () => {
     expect(card('A線')).toHaveClass('selected');
     await user.type(screen.getByLabelText('機台名稱'), '草稿');
     vi.mocked(window.confirm).mockReturnValue(false);
-    await user.click(card('B線').querySelector('.itemActions')!);
+    await user.click(card('B線').querySelector('.itemTools')!);
     expect(card('A線')).toHaveClass('selected');
     expect(screen.getByLabelText('機台名稱')).toHaveValue('草稿');
   });
@@ -292,7 +297,7 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
     await openDefaultSave(user);
-    await user.click(screen.getByRole('button', { name: '編輯' }));
+    await user.click(screen.getByRole('button', { name: '編輯 濾芯' }));
     await user.type(screen.getByLabelText('上次維護日期'), '2026-01-02');
     await user.type(screen.getByLabelText('預定維護日期'), '2027-03-15');
     await user.click(screen.getByRole('button', { name: '儲存耗材' }));
@@ -417,4 +422,31 @@ describe('App', () => {
     expect(screen.getByText('CNC-01')).toBeInTheDocument();
   });
 
+
+  it('keeps new-item forms and idle paste buttons out of the way until needed', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: /讀取預設存檔/ }));
+    await user.click(screen.getByRole('button', { name: '後台管理' }));
+    expect(screen.queryByLabelText('產線名稱')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '貼上產線' })).not.toBeInTheDocument();
+    expect(screen.getByTitle(dataPath)).toHaveTextContent(/^factory-data\.json$/);
+    await user.click(screen.getByRole('button', { name: '新增產線' }));
+    expect(screen.getByLabelText('產線名稱')).toHaveFocus();
+    await user.click(screen.getByRole('button', { name: '取消' }));
+    expect(screen.queryByLabelText('產線名稱')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '複製 A線' }));
+    expect(screen.getByRole('button', { name: '貼上產線' })).toBeEnabled();
+  });
+
+  it('explains when the save file was changed elsewhere', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await openDefaultSave(user);
+    saveMock.mockRejectedValueOnce(new Error("Error invoking remote method 'factory-data:save': Error: FACTORY_FILE_CHANGED"));
+    await user.type(screen.getByLabelText('產線名稱'), 'B線');
+    await user.click(screen.getByRole('button', { name: '建立產線' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('已被其他程式或電腦修改');
+    expect(screen.getByLabelText('產線名稱')).toHaveValue('B線');
+  });
 });
